@@ -1,6 +1,8 @@
 .PHONY: all clean format check-format test tidy cppcheck iwyu docs sanitize \
 	benchmark install-deps christmas-tree
 
+.DEFAULT_GOAL := all
+
 CXX := zig c++
 CC  := zig cc
 
