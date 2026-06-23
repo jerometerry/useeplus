@@ -1,0 +1,16 @@
+[
+  { "include": [ "<bits/unicode-data.h>", "private", "<format>", "public" ] },
+  { "include": [ "<bits/unicode.h>", "private", "<format>", "public" ] },
+  { "include": [ "@<bits/unicode.*>", "private", "<format>", "public" ] },
+  { "include": [ "<libusockets.h>", "private", "<App.h>", "public" ] },
+  { "include": [ "<_string.h>", "private", "<cstring>", "public" ] },
+  { "include": [ "<_stdlib.h>", "private", "<cstdlib>", "public" ] },
+  { "include": [ "<_ctype.h>", "private", "<cctype>", "public" ] },
+  { "symbol": [ "memcpy", "private", "<cstring>", "public" ] },
+  { "symbol": [ "std::memcpy", "private", "<cstring>", "public" ] },
+  { "symbol": [ "EXIT_SUCCESS", "private", "<cstdlib>", "public" ] },
+  { "symbol": [ "EXIT_FAILURE", "private", "<cstdlib>", "public" ] },
+  { "symbol": [ "tolower", "private", "<cctype>", "public" ] },
+  { "symbol": [ "std::format", "private", "<format>", "public" ] },
+  { "include": [ "@<__format/.*>", "private", "<format>", "public" ] }
+]

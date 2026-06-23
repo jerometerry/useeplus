@@ -2,6 +2,7 @@
 
 #ifndef USEEPLUS_PROTOCOL_H
 #define USEEPLUS_PROTOCOL_H
+#endif
 
 #ifdef __KERNEL__
 #include "useeplus_protoco_linux_kernel.h"
@@ -10,16 +11,16 @@
 #ifdef __cplusplus
 extern "C" {
 #if defined(__APPLE__)
-#include "useeplus_protoco_macos_cpp.h"
+#include "useeplus_protocol_macos_cpp.h"
 #else
-#include "useeplus_protoco_linux_cpp.h"
+#include "useeplus_protocol_linux_cpp.h"
 #endif
 }
 #else
 #if defined(__APPLE__)
-#include "useeplus_protoco_macos_c.h"
+#include "useeplus_protocol_macos_c.h"
 #else
-#include "useeplus_protoco_linux_c.h"
+#include "useeplus_protocol_linux_c.h"
 #endif
 #endif
 
