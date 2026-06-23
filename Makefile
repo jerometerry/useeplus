@@ -15,6 +15,7 @@ CFLAGS   := -Wall -Wextra -g -fno-omit-frame-pointer
 SRC_DIR          := src
 INC_DIR          := include/useeplus
 BUILD_DIR        := build
+THIRD_PARTY_DIR  := third_party
 TEST_DIR         := tests
 BENCH_DIR        := benchmark
 
@@ -64,12 +65,12 @@ endif
 LIBUSB_CFLAGS := $(shell pkg-config --cflags libusb-1.0)
 
 INCLUDES := -I$(INC_DIR) \
-            -isystem $(BUILD_DIR)/sockets/uWebSockets/src \
-            -isystem $(BUILD_DIR)/sockets/uSockets/src \
+            -isystem $(THIRD_PARTY_DIR)/uWebSockets/src \
+            -isystem $(THIRD_PARTY_DIR)/uSockets/src \
             $(patsubst -I%,-isystem %,$(LIBUSB_CFLAGS))
 
 LDFLAGS += -Wl,--start-group \
-           $(BUILD_DIR)/sockets/uSockets/uSockets.a \
+           $(THIRD_PARTY_DIR)/uSockets/uSockets.a \
            $(CORE_LIB) \
            -Wl,--end-group -lz -lssl -lcrypto -lpthread \
            $(shell pkg-config --libs libusb-1.0)
@@ -80,15 +81,15 @@ ifeq ($(PLATFORM),MACOS)
     LDFLAGS  += $(shell pkg-config --libs-only-L openssl 2>/dev/null || echo "-L/opt/homebrew/opt/openssl@3/lib")
 endif
 
-GTEST_INC  := -isystem build/googletest/googletest/include \
-              -isystem build/googletest/googlemock/include
-GTEST_LIBS := build/googletest/build/lib/libgtest.a \
-              build/googletest/build/lib/libgtest_main.a \
-              build/googletest/build/lib/libgmock.a
+GTEST_INC  := -isystem $(THIRD_PARTY_DIR)/googletest/googletest/include \
+              -isystem $(THIRD_PARTY_DIR)/googletest/googlemock/include
+GTEST_LIBS := $(THIRD_PARTY_DIR)/googletest/build/lib/libgtest.a \
+              $(THIRD_PARTY_DIR)/googletest/build/lib/libgtest_main.a \
+              $(THIRD_PARTY_DIR)/googletest/build/lib/libgmock.a
 
-BENCH_INC  := -isystem build/benchmark/include
-BENCH_LIBS := build/benchmark/build/src/libbenchmark.a \
-              build/benchmark/build/src/libbenchmark_main.a
+BENCH_INC  := -isystem $(THIRD_PARTY_DIR)/benchmark/include
+BENCH_LIBS := $(THIRD_PARTY_DIR)/benchmark/build/src/libbenchmark.a \
+              $(THIRD_PARTY_DIR)/benchmark/build/src/libbenchmark_main.a
 
 $(PROJECT_TEST_OBJS) $(DRIVER_TEST_OBJS): INCLUDES += $(GTEST_INC)
 $(BENCHMARK_OBJS): INCLUDES += $(BENCH_INC)
@@ -202,7 +203,7 @@ cppcheck: $(CORE_DEPS) $(TEST_DEPS)
 	@cppcheck $(CORE_SRCS) $(PROJECT_TEST_SRCS) \
 		--cppcheck-build-dir=$(BUILD_DIR)/cppcheck_build \
 		-I$(INC_DIR) \
-		-i$(BUILD_DIR) --suppress=*:*googletest* --suppress=*:*gmock* \
+		-i$(BUILD_DIR) -i$(THIRD_PARTY_DIR) --suppress=*:*googletest* --suppress=*:*gmock* \
 		--suppress=missingIncludeSystem \
 		--std=c++20 --xml --enable=all --inconclusive --inline-suppr --check-level=exhaustive \
 		2> $(BUILD_DIR)/cppcheck_report.xml
