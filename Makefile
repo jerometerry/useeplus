@@ -24,7 +24,8 @@ CORE_SRCS := $(SRC_DIR)/usb_camera.cpp \
              $(SRC_DIR)/usb_driver.cpp \
              $(SRC_DIR)/useeplus_video_stream.cpp \
              $(SRC_DIR)/useeplus_protocol.c \
-	     $(SRC_DIR)/mjpeg_server.cpp
+	     $(SRC_DIR)/mjpeg_server.cpp \
+	     $(SRC_DIR)/http_response_builder.cpp
 
 CORE_OBJS := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(CORE_SRCS)))
 CORE_LIB  := $(BUILD_DIR)/libmjpeg_streamer_core.a
@@ -101,11 +102,6 @@ $(CORE_OBJS): | $(CORE_DEPS)
 $(PROJECT_TEST_OBJS) $(DRIVER_TEST_OBJS): | $(CORE_DEPS) $(TEST_DEPS)
 $(BENCHMARK_OBJS): | $(CORE_DEPS) $(BENCH_DEPS)
 
-all: $(CORE_DEPS)
-
-clean:
-	rm -rf $(BUILD_DIR)
-
 $(CORE_DEPS): install-core-deps.sh
 	@echo "Checking core dependency trees..."
 	@mkdir -p $(BUILD_DIR)
@@ -130,8 +126,6 @@ $(DEPS_SENTINEL): install-deps.sh
 	@mkdir -p $(BUILD_DIR)
 	@touch $@
 
-install-deps: $(DEPS_SENTINEL)
-
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
@@ -153,6 +147,31 @@ $(BUILD_DIR)/run_linux_driver_tests: $(DRIVER_TEST_OBJS) $(CORE_LIB)
 $(BUILD_DIR)/%.bench: $(BUILD_DIR)/benchmark/%.o $(CORE_LIB)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(BENCH_LIBS) $(LDFLAGS)
 
+TIDY_CHECKS := -*,performance-*,concurrency-*,bugprone-*,modernize-*,cppcoreguidelines-*, \
+-modernize-use-trailing-return-type,-cppcoreguidelines-avoid-magic-numbers, \
+-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-reinterpret-cast, \
+-cppcoreguidelines-avoid-c-arrays,-modernize-avoid-c-arrays, \
+-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-type-cstyle-cast, \
+-cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-avoid-non-const-global-variables, \
+-bugprone-throwing-static-initialization,-modernize-use-designated-initializers, \
+-modernize-use-integer-sign-comparison,-modernize-use-auto,-modernize-use-ranges, \
+-bugprone-narrowing-conversions,-cppcoreguidelines-narrowing-conversions, \
+-modernize-avoid-c-style-cast,-cppcoreguidelines-pro-type-const-cast,-modernize-use-nodiscard, \
+-modernize-use-equals-default,-cppcoreguidelines-special-member-functions, \
+-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,-performance-enum-size
+
+TIDY_SRCS := $(filter-out %.c, $(CORE_SRCS) $(PROJECT_TEST_SRCS))
+
+IWYU_SRCS    := $(CORE_SRCS) $(PROJECT_TEST_SRCS)
+IWYU_TARGETS := $(addprefix iwyu-,$(IWYU_SRCS))
+
+all: $(CORE_DEPS)
+
+clean:
+	rm -rf $(BUILD_DIR)
+
+install-deps: $(DEPS_SENTINEL)
+
 test: $(CORE_DEPS) $(TEST_DEPS) $(PROJECT_TEST_OBJS) $(DRIVER_TEST_OBJS) $(TEST_TARGETS)
 	@$(BUILD_DIR)/run_project_tests
 	@$(BUILD_DIR)/run_linux_driver_tests
@@ -173,21 +192,6 @@ format:
 check-format:
 	@./run-format.sh check
 
-TIDY_CHECKS := -*,performance-*,concurrency-*,bugprone-*,modernize-*,cppcoreguidelines-*, \
--modernize-use-trailing-return-type,-cppcoreguidelines-avoid-magic-numbers, \
--cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-reinterpret-cast, \
--cppcoreguidelines-avoid-c-arrays,-modernize-avoid-c-arrays, \
--cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-type-cstyle-cast, \
--cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-avoid-non-const-global-variables, \
--bugprone-throwing-static-initialization,-modernize-use-designated-initializers, \
--modernize-use-integer-sign-comparison,-modernize-use-auto,-modernize-use-ranges, \
--bugprone-narrowing-conversions,-cppcoreguidelines-narrowing-conversions, \
--modernize-avoid-c-style-cast,-cppcoreguidelines-pro-type-const-cast,-modernize-use-nodiscard, \
--modernize-use-equals-default,-cppcoreguidelines-special-member-functions, \
--cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,-performance-enum-size
-
-TIDY_SRCS := $(filter-out %.c, $(CORE_SRCS) $(PROJECT_TEST_SRCS))
-
 tidy: $(CORE_DEPS) $(TEST_DEPS)
 	@echo "Running clang-tidy..."
 	@clang-tidy -checks="$(TIDY_CHECKS)" -warnings-as-errors=* $(TIDY_SRCS) -- $(CXXFLAGS) $(INCLUDES) $(GTEST_INC)
@@ -204,9 +208,6 @@ cppcheck: $(CORE_DEPS) $(TEST_DEPS)
 		2> $(BUILD_DIR)/cppcheck_report.xml
 	@cppcheck-htmlreport --file=$(BUILD_DIR)/cppcheck_report.xml \
 		--report-dir=$(BUILD_DIR)/html_report --source-dir=. --title="pi-borescope-streamer"
-
-IWYU_SRCS    := $(CORE_SRCS) $(PROJECT_TEST_SRCS)
-IWYU_TARGETS := $(addprefix iwyu-,$(IWYU_SRCS))
 
 iwyu: $(IWYU_TARGETS)
 $(IWYU_TARGETS): iwyu-%: $(CORE_DEPS) $(TEST_DEPS)
