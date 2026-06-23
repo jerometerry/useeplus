@@ -24,11 +24,11 @@ CORE_SRCS := $(SRC_DIR)/usb_camera.cpp \
              $(SRC_DIR)/usb_driver.cpp \
              $(SRC_DIR)/useeplus_video_stream.cpp \
              $(SRC_DIR)/useeplus_protocol.c \
-	     $(SRC_DIR)/mjpeg_server.cpp \
-	     $(SRC_DIR)/http_response_builder.cpp
+             $(SRC_DIR)/mjpeg_server.cpp \
+             $(SRC_DIR)/http_response_builder.cpp
 
 CORE_OBJS := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(CORE_SRCS)))
-CORE_LIB  := $(BUILD_DIR)/libmjpeg_streamer_core.a
+CORE_LIB  := $(BUILD_DIR)/libuseeplus.a
 
 PROJECT_TEST_SRCS := $(TEST_DIR)/test_disruptor.cpp \
                      $(TEST_DIR)/test_useeplus_video_stream.cpp
@@ -70,7 +70,7 @@ INCLUDES := -I$(INC_DIR) \
 
 LDFLAGS += -Wl,--start-group \
            $(BUILD_DIR)/sockets/uSockets/uSockets.a \
-           $(BUILD_DIR)/libmjpeg_streamer_core.a \
+           $(CORE_LIB) \
            -Wl,--end-group -lz -lssl -lcrypto -lpthread \
            $(shell pkg-config --libs libusb-1.0)
 
@@ -165,7 +165,7 @@ TIDY_SRCS := $(filter-out %.c, $(CORE_SRCS) $(PROJECT_TEST_SRCS))
 IWYU_SRCS    := $(CORE_SRCS) $(PROJECT_TEST_SRCS)
 IWYU_TARGETS := $(addprefix iwyu-,$(IWYU_SRCS))
 
-all: $(CORE_DEPS)
+all: $(CORE_DEPS) $(CORE_LIB)
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -207,7 +207,7 @@ cppcheck: $(CORE_DEPS) $(TEST_DEPS)
 		--std=c++20 --xml --enable=all --inconclusive --inline-suppr --check-level=exhaustive \
 		2> $(BUILD_DIR)/cppcheck_report.xml
 	@cppcheck-htmlreport --file=$(BUILD_DIR)/cppcheck_report.xml \
-		--report-dir=$(BUILD_DIR)/html_report --source-dir=. --title="pi-borescope-streamer"
+		--report-dir=$(BUILD_DIR)/html_report --source-dir=. --title="useeplus"
 
 iwyu: $(IWYU_TARGETS)
 $(IWYU_TARGETS): iwyu-%: $(CORE_DEPS) $(TEST_DEPS)
@@ -224,7 +224,7 @@ $(IWYU_TARGETS): iwyu-%: $(CORE_DEPS) $(TEST_DEPS)
 docs:
 	@echo "Generating API Documentation with Doxygen..."
 	@mkdir -p docs/api
-	@echo "PROJECT_NAME = pi-borescope-streamer\nINPUT = src include\nRECURSIVE = YES\nGENERATE_HTML = YES\nGENERATE_LATEX = NO\nMACRO_EXPANSION = YES\nPREDEFINED =
+	@echo "PROJECT_NAME = useeplus\nINPUT = src include\nRECURSIVE = YES\nGENERATE_HTML = YES\nGENERATE_LATEX = NO\nMACRO_EXPANSION = YES\nPREDEFINED =" | doxygen -
 
 define SORT_TREE_SCRIPT
 import sys, re
@@ -238,7 +238,7 @@ def sort_tree(m):
     lines.sort(key=len, reverse=True)
     return "\n" + "\n".join(lines) + "\n"
 
-files = ["useeplus_core.c", "useeplus_protocol.c"]
+files = ["src/useeplus_core.c", "src/useeplus_protocol.c"]
 for f in files:
     try:
         c = open(f).read()
@@ -255,4 +255,4 @@ christmas-tree:
 	@echo "Sorting local variable trees..."
 	@python3 -c "$$SORT_TREE_SCRIPT"
 	@echo "Applying standard formatting..."
-	@clang-format -i useeplus_core.c useeplus_protocol.c
+	@clang-format -i src/useeplus_core.c src/useeplus_protocol.c
