@@ -64,7 +64,8 @@ DRIVER_TEST_OBJS  := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(DRIVER_TEST_SRCS
 TEST_TARGETS      := $(BUILD_DIR)/run_project_tests $(BUILD_DIR)/run_linux_driver_tests
 
 BENCHMARK_SRCS    := $(BENCH_DIR)/disruptor_benchmark.cpp \
-                     $(BENCH_DIR)/disruptor_concurrency_benchmark.cpp
+                     $(BENCH_DIR)/disruptor_concurrency_benchmark.cpp \
+                     $(BENCH_DIR)/mjpeg_pipeline_benchmark.cpp
 
 BENCHMARK_OBJS    := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(BENCHMARK_SRCS)))
 BENCHMARK_TARGETS := $(patsubst $(BENCH_DIR)/%.cpp,$(BUILD_DIR)/%.bench,$(BENCHMARK_SRCS))
