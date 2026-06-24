@@ -36,13 +36,11 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
         throw std::runtime_error("Failed to claim USB hardware interfaces");
     }
 
-    // libusb caches states and will skip resetting the hardware if it thinks nothing changed.
-    // By explicitly setting the alt setting here, we force the host controller to send a
-    // SET_INTERFACE packet, which flushes the camera's FIFOs and synchronizes the USB data toggles.
-    libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
+    libusb_clear_halt(deviceHandle_, LIBUSB_ENDPOINT_IN | UsbProtocol::VIDEO_ENDPOINT);
+    libusb_clear_halt(deviceHandle_, LIBUSB_ENDPOINT_OUT | UsbProtocol::VIDEO_ENDPOINT);
+    libusb_clear_halt(deviceHandle_, LIBUSB_ENDPOINT_IN | UsbProtocol::IAP_ENDPOINT);
+    libusb_clear_halt(deviceHandle_, LIBUSB_ENDPOINT_OUT | UsbProtocol::IAP_ENDPOINT);
 
-    // Loop 30 times with a rapid 100ms timeout to clear out pending heartbeat data
-    // from the iAP interface before we attempt to stream.
     int heartbeatSinkBytes = 0;
     unsigned char iApHeartbeatSink[512];
     for (int i = 0; i < 30; ++i) {
@@ -82,6 +80,7 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
     }
 
     int numBytes = 0;
+
     write(UsbProtocol::IAP_ENDPOINT, UsbProtocol::IAP_AUTH_HANDSHAKE,
           sizeof(UsbProtocol::IAP_AUTH_HANDSHAKE), numBytes);
 
@@ -105,7 +104,11 @@ UsbCamera::~UsbCamera() {
 
 void UsbCamera::haltHardware() {
     if (deviceHandle_) {
-        libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
+        uint8_t stopCmd[] = { 0xBB, 0xAA, 0x06, 0x00, 0x00 };
+        int actualLength = 0;
+        libusb_bulk_transfer(deviceHandle_,
+                             LIBUSB_ENDPOINT_OUT | UsbProtocol::VIDEO_ENDPOINT,
+                             stopCmd, sizeof(stopCmd), &actualLength, 100);
     }
 }
 
