@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pi-Borescope Streamer</title>
+    <style>
+        body {
+            background: #111;
+            text-align: center;
+            margin-top: 40px;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header-container {
+            margin-bottom: 30px;
+        }
+
+        .brand-title {
+            font-size: 2.2em;
+            margin: 0 0 5px 0;
+            color: #4caf50;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .brand-subtitle {
+            margin: 0;
+            color: #888;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-container {
+            margin: 20px auto;
+            max-width: 1400px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            padding: 0 15px;
+            flex-grow: 1;
+        }
+
+        .feed-container {
+            /* THE FIX: 'auto' forces the flexbox to use the image's true pixel width */
+            flex: 1 1 auto;
+            width: auto;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .video-element, .canvas-element {
+            /* THE FIX: 'auto' prevents CSS from artificially squishing the video */
+            width: auto;
+            max-width: 100%; /* Shrink only if the screen is physically smaller than the video */
+            height: auto;
+            background: #000;
+            box-sizing: border-box;
+            /* Aspect ratio is naturally handled by the browser now */
+        }
+
+        .video-element {
+            border: 4px solid #333;
+            cursor: pointer;
+        }
+
+        .canvas-element {
+            border: 4px solid #4caf50;
+        }
+
+        .button-group {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        .action-btn:hover {
+            background: #45a049;
+        }
+
+        .action-btn.download-btn {
+            background: #2196F3;
+        }
+
+        .action-btn.download-btn:hover {
+            background: #0b7dda;
+        }
+
+        .footer-container {
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid #333;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .github-link {
+            color: #2196F3;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s ease;
+        }
+
+        .github-link:hover {
+            color: #4caf50;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1 class="brand-title">Pi-Borescope Streamer</h1>
+        <p class="brand-subtitle">Live Endoscope Dashboard</p>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="feed-container">
+            <h3>Live Stream</h3>
+            <img id="video-feed"
+                 src="/stream"
+                 onclick="takeSnapshot()"
+                 onerror="reconnectStream()"
+                 alt="Live Borescope Feed"
+                 class="video-element" />
+
+            <div class="button-group">
+                <button onclick="takeSnapshot();" class="action-btn">
+                    Take Snapshot
+                </button>
+            </div>
+        </div>
+
+        <div class="feed-container">
+            <h3>Snapshot</h3>
+            <!-- Kept at 640x480. takeSnapshot() will dynamically resize this canvas to 1280x720 when a 720p photo is taken! -->
+            <canvas id="snap-view" width="640" height="480" class="canvas-element"></canvas>
+
+            <div class="button-group">
+                <button onclick="downloadSnapshot();" class="action-btn download-btn">
+                    Download Snapshot
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-container">
+        <a href="https://github.com/jerometerry/pi-borescope-streamer" target="_blank" class="github-link">
+            <svg height="20" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="20" fill="currentColor">
+                <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.46-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+            </svg>
+            pi-borescope-streamer
+        </a>
+    </footer>
+
+    <script>
+        const videoFeedId = 'video-feed';
+        const snapViewId = 'snap-view';
+
+        function resyncLiveStream() {
+            const liveStream = document.getElementById(videoFeedId);
+            if (liveStream) {
+                liveStream.src = '/stream?cb=' + Date.now();
+            }
+        }
+
+        function handleResume() {
+            if (document.visibilityState === "visible") {
+                resyncLiveStream();
+            }
+        }
+
+        document.addEventListener("visibilitychange", handleResume);
+        window.addEventListener("focus", handleResume);
+
+        function reconnectStream() {
+            console.log("Stream error detected. Retrying in 2 seconds...");
+            setTimeout(resyncLiveStream, 2000);
+        }
+
+        function takeSnapshot() {
+            const img = document.getElementById(videoFeedId);
+            const canvas = document.getElementById(snapViewId);
+
+            if (!img.complete || img.naturalWidth === 0) {
+                console.log("Stream image data not ready yet.");
+                return;
+            }
+
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        function downloadSnapshot() {
+            const canvas = document.getElementById(snapViewId);
+            const link = document.createElement('a');
+            link.download = 'borescope-snap-' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        resyncLiveStream();
+
+        document.getElementById(videoFeedId).addEventListener('load', function() {
+            takeSnapshot();
+        });
+    </script>
+</body>
+</html>
