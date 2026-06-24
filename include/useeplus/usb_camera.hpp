@@ -63,6 +63,8 @@ class UsbCamera {
      */
     UsbCamera& operator=(UsbCamera&&) = delete;
 
+    void haltHardware();
+
     /**
      * @brief Find the physical camera hardware on the computer's USB ports.
      * @param context The active libusb environment.

@@ -143,7 +143,7 @@ inline constexpr unsigned int USB_TIMEOUT = 1000;
 
 /**
  * @brief The grace period (in ms) allowed for pending asynchronous USB transfers to cleanly cancel
- * before the driver thread forcibly exits during an application shutdown.
+ * before the video source thread forcibly exits during an application shutdown.
  */
 inline constexpr unsigned int SHUTDOWN_WAIT_TIMEOUT = 50;
 

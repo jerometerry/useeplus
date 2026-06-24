@@ -101,6 +101,12 @@ UsbCamera::~UsbCamera() {
     }
 }
 
+void UsbCamera::haltHardware() {
+    if (deviceHandle_) {
+        libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
+    }
+}
+
 libusb_device_handle* UsbCamera::open(libusb_context* context, const UsbDeviceInfo& target) {
     libusb_device** devices = nullptr;
     ssize_t count = libusb_get_device_list(context, &devices);

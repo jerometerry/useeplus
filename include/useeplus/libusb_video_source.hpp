@@ -29,7 +29,7 @@ class LibusbVideoSource {
     using TransferHandler = std::function<bool(UsbTransferStatus, std::span<const uint8_t>)>;
 
     /**
-     * @brief Constructs the driver.
+     * @brief Constructs the libusb video source.
      * @param transferHandler The callback to execute when a chunk of data is successfully read.
      * @param running Pointer to the global atomic shutdown flag.
      */

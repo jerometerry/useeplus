@@ -67,6 +67,12 @@ void LibusbVideoSource::loop(const UsbDeviceInfo& target, CameraResolution resol
                 libusb_cancel_transfer(transfer);
             }
 
+	    // Halt the hardware immediately so it stops filling its internal FIFO
+            // We do this BEFORE we wait for the cancellations to process.
+            if (camera_) {
+                camera_->haltHardware();
+            }
+
             struct timeval shutdownTimeValue = {0, UsbConfig::SHUTDOWN_WAIT_TIMEOUT};
             while (activeTransfers_.load(std::memory_order_acquire) > 0 && camera_) {
                 libusb_handle_events_timeout(camera_->getContext(), &shutdownTimeValue);
@@ -127,17 +133,17 @@ void LibusbVideoSource::loop(const UsbDeviceInfo& target, CameraResolution resol
 }
 
 void LIBUSB_CALL LibusbVideoSource::transferCallback(struct libusb_transfer* transfer) {
-    auto* driver = static_cast<LibusbVideoSource*>(transfer->user_data);
-    if (!driver) {
+    auto* source = static_cast<LibusbVideoSource*>(transfer->user_data);
+    if (!source) {
         [[unlikely]] return;
     }
 
     const size_t remainingTransfers =
-        driver->activeTransfers_.fetch_sub(1, std::memory_order_acq_rel) - 1;
+        source->activeTransfers_.fetch_sub(1, std::memory_order_acq_rel) - 1;
 
     if (transfer->status == LIBUSB_TRANSFER_CANCELLED) {
         if (remainingTransfers == 0) {
-            driver->running_->store(false, std::memory_order_release);
+            source->running_->store(false, std::memory_order_release);
         }
         return;
     }
@@ -154,13 +160,13 @@ void LIBUSB_CALL LibusbVideoSource::transferCallback(struct libusb_transfer* tra
         payload = std::span<const uint8_t>(transfer->buffer, transfer->actual_length);
     }
 
-    bool shouldResubmit = driver->transferHandler_(status, payload);
+    bool shouldResubmit = source->transferHandler_(status, payload);
     if (!shouldResubmit) {
-        driver->running_->store(false, std::memory_order_release);
-    } else if (driver->running_->load(std::memory_order_relaxed)) {
-        driver->activeTransfers_.fetch_add(1, std::memory_order_relaxed);
+        source->running_->store(false, std::memory_order_release);
+    } else if (source->running_->load(std::memory_order_relaxed)) {
+        source->activeTransfers_.fetch_add(1, std::memory_order_relaxed);
         if (libusb_submit_transfer(transfer) != LIBUSB_SUCCESS) {
-            driver->activeTransfers_.fetch_sub(1, std::memory_order_release);
+            source->activeTransfers_.fetch_sub(1, std::memory_order_release);
         }
     }
 }
