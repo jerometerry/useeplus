@@ -36,6 +36,11 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
         throw std::runtime_error("Failed to claim USB hardware interfaces");
     }
 
+    // libusb caches states and will skip resetting the hardware if it thinks nothing changed.
+    // By explicitly setting the alt setting here, we force the host controller to send a
+    // SET_INTERFACE packet, which flushes the camera's FIFOs and synchronizes the USB data toggles.
+    libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
+
     // Loop 30 times with a rapid 100ms timeout to clear out pending heartbeat data
     // from the iAP interface before we attempt to stream.
     int heartbeatSinkBytes = 0;
