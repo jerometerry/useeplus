@@ -95,6 +95,10 @@ UsbCamera::~UsbCamera() {
 	libusb_release_interface(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
         libusb_release_interface(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE);
 
+	// Return control to the OS
+        libusb_attach_kernel_driver(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
+        libusb_attach_kernel_driver(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE);
+
         libusb_close(deviceHandle_);
     }
     if (context_) {
