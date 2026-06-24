@@ -96,26 +96,6 @@ struct up_video_frm_frag_hdr {
 #define UP_VIDEO_FRM_FRAG_HDR_LEN (sizeof(struct up_video_frm_frag_hdr))
 #define VIDEO_DATA_OFFSET (UP_USB_FRM_HDR_LEN + UP_VIDEO_FRM_FRAG_HDR_LEN)
 
-struct up_decode_context {
-	size_t	      index;
-	unsigned long flags;
-
-	u8 *vaddr;
-
-	struct up_buffer *active_buf;
-	size_t		  active_pl_len;
-
-	size_t decode_buf_len;
-	u8    *decode_buf;
-};
-
-struct up_decode_state {
-	size_t usb_frm_len;
-	u8     frame_id;
-	u8     dev_num;
-	u8     flags;
-};
-
 // NOLINTEND(bugprone-reserved-identifier,cppcoreguidelines-use-enum-class,modernize-use-using,cppcoreguidelines-macro-usage)
 
 #endif /* USEEPLUS_PROTOCOL_MACOS_C_H */
