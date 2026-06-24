@@ -299,6 +299,57 @@ static const struct v4l2_ioctl_ops up_v4l2_ioctl_ops = {
 	.vidioc_create_bufs = vb2_ioctl_create_bufs,
 };
 
+static int up_write_msg(struct up_drv_data *data, u8 ep_addr, const u8 *tokens,
+			size_t len)
+{
+	struct usb_device *u_dev;
+	int sent_bytes;
+	int out_pipe;
+	int retval;
+	u8 *buf;
+
+	u_dev = data->usb.udev;
+	buf = kmemdup(tokens, len, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	out_pipe = usb_sndbulkpipe(u_dev, ep_addr);
+	retval = usb_bulk_msg(u_dev, out_pipe, buf, len, &sent_bytes, USB_TO);
+
+	kfree(buf);
+	return retval;
+}
+
+static const u8 iap_auth_handshake[] = { 0xFF, 0x55, 0xFF, 0x55, 0xEE, 0x10 };
+
+static int up_iap_auth(struct up_drv_data *drv_data)
+{
+	size_t size = sizeof(iap_auth_handshake);
+	int ep = drv_data->usb.iap_out_ep;
+
+	return up_write_msg(drv_data, ep, iap_auth_handshake, size);
+}
+
+static const u8 start_video_command[] = { 0xBB, 0xAA, 0x05, 0x00, 0x00 };
+
+static int up_start_video(struct up_drv_data *drv_data)
+{
+	size_t size = sizeof(start_video_command);
+	int    ep = drv_data->usb.video_out_ep;
+
+	return up_write_msg(drv_data, ep, start_video_command, size);
+}
+
+static const u8 stop_video_command[] = { 0xBB, 0xAA, 0x06, 0x00, 0x00 };
+
+static int up_stop_video(struct up_drv_data *drv_data)
+{
+	size_t size = sizeof(stop_video_command);
+	int    ep = drv_data->usb.video_out_ep;
+
+	return up_write_msg(drv_data, ep, stop_video_command, size);
+}
+
 static void up_stop_streaming(struct vb2_queue *vq)
 {
 	struct vb2_v4l2_buffer *v4l2_buf;
@@ -311,11 +362,14 @@ static void up_stop_streaming(struct vb2_queue *vq)
 
 	drv_data = vb2_get_drv_priv(vq);
 
+	if (test_and_clear_bit(STREAM_HW_ACTIVE, &drv_data->pipeline.streaming)) {
+                up_stop_video(drv_data);
+        }
+
 	/*
 	 * Signal the callback and hardware state to STOP processing immediately.
 	 */
 	clear_bit(STREAM_CLIENT_READY, &drv_data->pipeline.streaming);
-	clear_bit(STREAM_HW_ACTIVE, &drv_data->pipeline.streaming);
 
 	/*
 	 * Ensure all CPU cores see the bit changes before we start Freeing URBs.
@@ -366,47 +420,6 @@ static void up_stop_streaming(struct vb2_queue *vq)
 		vb2_buffer_done(&buf->vb2_buffer.vb2_buf, VB2_BUF_STATE_ERROR);
 	}
 	spin_unlock_irqrestore(&drv_data->pipeline.ready_lock, flags);
-}
-
-static int up_write_msg(struct up_drv_data *data, u8 ep_addr, const u8 *tokens,
-			size_t len)
-{
-	struct usb_device *u_dev;
-	int sent_bytes;
-	int out_pipe;
-	int retval;
-	u8 *buf;
-
-	u_dev = data->usb.udev;
-	buf = kmemdup(tokens, len, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
-
-	out_pipe = usb_sndbulkpipe(u_dev, ep_addr);
-	retval = usb_bulk_msg(u_dev, out_pipe, buf, len, &sent_bytes, USB_TO);
-
-	kfree(buf);
-	return retval;
-}
-
-static const u8 iap_auth_handshake[] = { 0xFF, 0x55, 0xFF, 0x55, 0xEE, 0x10 };
-
-static int up_iap_auth(struct up_drv_data *drv_data)
-{
-	size_t size = sizeof(iap_auth_handshake);
-	int ep = drv_data->usb.iap_out_ep;
-
-	return up_write_msg(drv_data, ep, iap_auth_handshake, size);
-}
-
-static const u8 start_video_command[] = { 0xBB, 0xAA, 0x05, 0x00, 0x00 };
-
-static int up_start_video(struct up_drv_data *drv_data)
-{
-	size_t size = sizeof(start_video_command);
-	int    ep = drv_data->usb.video_out_ep;
-
-	return up_write_msg(drv_data, ep, start_video_command, size);
 }
 
 static int up_start_streaming(struct vb2_queue *vq, unsigned int count)
