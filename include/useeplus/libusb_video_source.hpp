@@ -42,7 +42,8 @@ class LibusbVideoSource {
      * @param target The verified USB device descriptor to connect to.
      * @param formatIndex
      */
-    void start(const UsbDeviceInfo& target, CameraResolution resolution = SupportedResolutions::VGA_480P);
+    void start(const UsbDeviceInfo& target,
+               CameraResolution resolution = SupportedResolutions::VGA_480P);
 
     /**
      * @brief Safely cancels all active USB transfers and joins the worker thread.

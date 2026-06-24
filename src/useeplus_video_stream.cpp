@@ -1,11 +1,11 @@
 #include "useeplus_video_stream.hpp"
-#include "useeplus_protocol.h"
 
 #include <cstdint>
 #include <span>
 #include <vector>
 
 #include "constants.hpp"
+#include "useeplus_protocol.h"
 #include "video_frame_buffer.hpp"
 #include "video_frame_fragment.hpp"
 

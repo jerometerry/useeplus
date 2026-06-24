@@ -1,6 +1,7 @@
 #include "v4l2_video_source.hpp"
 
 #include <sys/select.h>
+
 #include <iostream>
 
 void V4l2VideoSource::loop(V4l2Device* device) {
@@ -16,7 +17,6 @@ void V4l2VideoSource::loop(V4l2Device* device) {
         if (r > 0) {
             V4l2Device::Frame frame;
             if (device->dequeue_frame(frame)) {
-
                 if (handler_) {
                     handler_(frame.payload);
                 }

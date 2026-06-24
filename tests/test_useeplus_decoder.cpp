@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
-#include <vector>
+
 #include <cstdint>
 #include <cstring>
+#include <vector>
 
 #include "useeplus_protocol.h"
 
@@ -12,7 +13,7 @@ struct DecoderEvent {
 };
 
 class CameraHardwareEmulator {
-public:
+   public:
     std::vector<uint8_t> stream;
     size_t page_offset = 0;
 
@@ -26,7 +27,7 @@ public:
                 stream.push_back(0xAA);
                 stream.push_back(0xBB);
                 stream.push_back(VIDEO_CAMERA_ID);
-                stream.push_back(0xFF); // Garbage length
+                stream.push_back(0xFF);  // Garbage length
                 stream.push_back(0xFF);
                 i += 4;
             } else {
@@ -36,7 +37,8 @@ public:
         page_offset = 0;
     }
 
-    void emit_packet(uint8_t dev_id, uint8_t frame_id, uint8_t flags, const std::vector<uint8_t>& payload) {
+    void emit_packet(uint8_t dev_id, uint8_t frame_id, uint8_t flags,
+                     const std::vector<uint8_t>& payload) {
         uint16_t packet_size = 5 + 7 + payload.size();
 
         // If it crosses the 4KB hardware boundary, force the padding
@@ -54,9 +56,9 @@ public:
 
         // Write Payload Header (7 Bytes)
         stream.push_back(frame_id);
-        stream.push_back(0x00); // device_number
+        stream.push_back(0x00);  // device_number
         stream.push_back(flags);
-        stream.push_back(0x00); // gravity sensor matrix
+        stream.push_back(0x00);  // gravity sensor matrix
         stream.push_back(0x00);
         stream.push_back(0x00);
         stream.push_back(0x00);
@@ -65,13 +67,15 @@ public:
         page_offset += packet_size;
     }
 
-    void emit_video_frame(uint8_t frame_id, const std::vector<uint8_t>& jpeg_data, bool inject_gravity = false) {
+    void emit_video_frame(uint8_t frame_id, const std::vector<uint8_t>& jpeg_data,
+                          bool inject_gravity = false) {
         size_t offset = 0;
         int packet_counter = 0;
 
         while (offset < jpeg_data.size()) {
             size_t chunk_size = std::min<size_t>(932, jpeg_data.size() - offset);
-            std::vector<uint8_t> chunk(jpeg_data.begin() + offset, jpeg_data.begin() + offset + chunk_size);
+            std::vector<uint8_t> chunk(jpeg_data.begin() + offset,
+                                       jpeg_data.begin() + offset + chunk_size);
 
             emit_packet(VIDEO_CAMERA_ID, frame_id, 0x00, chunk);
             offset += chunk_size;
@@ -91,7 +95,7 @@ public:
 };
 
 class UseeplusDecoderTest : public ::testing::Test {
-protected:
+   protected:
     std::vector<DecoderEvent> events;
     up_decoder decoder{};
     CameraHardwareEmulator camera;
@@ -104,13 +108,16 @@ protected:
             static_cast<UseeplusDecoderTest*>(ctx)->events.push_back({DecoderEvent::START, fid, 0});
         };
         decoder.cb.on_video_frame_fragment = [](void* ctx, u8* data, size_t len) {
-            static_cast<UseeplusDecoderTest*>(ctx)->events.push_back({DecoderEvent::FRAGMENT, 0, len});
+            static_cast<UseeplusDecoderTest*>(ctx)->events.push_back(
+                {DecoderEvent::FRAGMENT, 0, len});
         };
         decoder.cb.on_video_frame_complete = [](void* ctx) {
-            static_cast<UseeplusDecoderTest*>(ctx)->events.push_back({DecoderEvent::COMPLETE, 0, 0});
+            static_cast<UseeplusDecoderTest*>(ctx)->events.push_back(
+                {DecoderEvent::COMPLETE, 0, 0});
         };
         decoder.cb.on_video_frame_incomplete = [](void* ctx) {
-            static_cast<UseeplusDecoderTest*>(ctx)->events.push_back({DecoderEvent::INCOMPLETE, 0, 0});
+            static_cast<UseeplusDecoderTest*>(ctx)->events.push_back(
+                {DecoderEvent::INCOMPLETE, 0, 0});
         };
     }
 
@@ -253,4 +260,3 @@ TEST_F(UseeplusDecoderTest, ReturnsZeroWhenStarvedOfHeaderData) {
     // It must not fire any callbacks.
     EXPECT_EQ(events.size(), 0);
 }
-

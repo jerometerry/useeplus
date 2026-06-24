@@ -21,8 +21,8 @@
 #include "video_frame_buffer.hpp"
 #include "video_frame_fragment.hpp"
 
-MjpegServer::MjpegServer(const int port, const std::atomic<bool>& running, std::string_view index_html,
-                         VideoFrameBuffer& disruptor)
+MjpegServer::MjpegServer(const int port, const std::atomic<bool>& running,
+                         std::string_view index_html, VideoFrameBuffer& disruptor)
     : port_(port), running_(running), index_html_(index_html), disruptor_(&disruptor) {}
 
 MjpegServer::~MjpegServer() {

@@ -5,12 +5,12 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <stdexcept>
+
 #include <iostream>
+#include <stdexcept>
 
 V4l2Device::V4l2Device(const std::string& device_path, CameraResolution target_resolution)
     : active_resolution_(target_resolution) {
-
     fd_ = open(device_path.c_str(), O_RDWR | O_NONBLOCK, 0);
     if (fd_ < 0) throw std::runtime_error("Cannot open " + device_path);
 
@@ -23,8 +23,10 @@ V4l2Device::V4l2Device(const std::string& device_path, CameraResolution target_r
     if (ioctl(fd_, VIDIOC_S_FMT, &fmt) < 0) throw std::runtime_error("Failed to set video format");
     if (ioctl(fd_, VIDIOC_G_FMT, &fmt) < 0) throw std::runtime_error("Failed to verify format");
 
-    if (fmt.fmt.pix.width != target_resolution.width || fmt.fmt.pix.height != target_resolution.height) {
-        std::cerr << "Warning: Driver fell back to " << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height << "\n";
+    if (fmt.fmt.pix.width != target_resolution.width ||
+        fmt.fmt.pix.height != target_resolution.height) {
+        std::cerr << "Warning: Driver fell back to " << fmt.fmt.pix.width << "x"
+                  << fmt.fmt.pix.height << "\n";
         active_resolution_.width = fmt.fmt.pix.width;
         active_resolution_.height = fmt.fmt.pix.height;
     }
@@ -44,12 +46,14 @@ V4l2Device::V4l2Device(const std::string& device_path, CameraResolution target_r
         ioctl(fd_, VIDIOC_QUERYBUF, &buf);
 
         buffers_[i].length = buf.length;
-        buffers_[i].start = mmap(nullptr, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, buf.m.offset);
+        buffers_[i].start =
+            mmap(nullptr, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, buf.m.offset);
         ioctl(fd_, VIDIOC_QBUF, &buf);
     }
 
     int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) throw std::runtime_error("Failed to start streaming");
+    if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0)
+        throw std::runtime_error("Failed to start streaming");
 }
 
 V4l2Device::~V4l2Device() {
@@ -63,8 +67,12 @@ V4l2Device::~V4l2Device() {
     }
 }
 
-CameraResolution V4l2Device::get_resolution() const { return active_resolution_; }
-int V4l2Device::get_fd() const { return fd_; }
+CameraResolution V4l2Device::get_resolution() const {
+    return active_resolution_;
+}
+int V4l2Device::get_fd() const {
+    return fd_;
+}
 
 bool V4l2Device::dequeue_frame(Frame& out_frame) {
     struct v4l2_buffer buf = {};

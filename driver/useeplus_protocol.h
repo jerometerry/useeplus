@@ -23,3 +23,5 @@
 #endif
 
 #endif /* USEEPLUS_PROTOCOL_H */
+
+#include "useeplus_protocol_utils.h"

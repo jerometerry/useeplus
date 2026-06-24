@@ -230,34 +230,3 @@ docs:
 	@echo "Generating API Documentation with Doxygen..."
 	@mkdir -p docs/api
 	@echo "PROJECT_NAME = useeplus\nINPUT = src include\nRECURSIVE = YES\nGENERATE_HTML = YES\nGENERATE_LATEX = NO\nMACRO_EXPANSION = YES\nPREDEFINED =" | doxygen -
-
-define SORT_TREE_SCRIPT
-import sys, re
-
-def sort_tree(m):
-    # Split lines and drop any empty ones
-    lines = [l for l in m.group(1).splitlines() if l.strip()]
-    # Triple check that we aren't accidentally grabbing logic or parameters
-    if any("(" in l or ")" in l or "->" in l or "=" in l for l in lines):
-        return m.group(0) # Abort and return completely unmodified
-    lines.sort(key=len, reverse=True)
-    return "\n" + "\n".join(lines) + "\n"
-
-files = ["driver/useeplus_core.c", "driver/useeplus_protocol.c"]
-for f in files:
-    try:
-        c = open(f).read()
-        # Strictly match blocks where EVERY line starts with a tab/spaces, a type, and strictly ends with a semicolon
-        pattern = r"\n((?:^[ \t]+(?:struct|int|char|u8|u16|u32|size_t|bool|const)\s+[^;()\n]+;\n)+)"
-        c = re.sub(pattern, sort_tree, c, flags=re.M)
-        open(f, "w").write(c)
-    except FileNotFoundError:
-        pass
-endef
-export SORT_TREE_SCRIPT
-
-christmas-tree:
-	@echo "Sorting local variable trees..."
-	@python3 -c "$$SORT_TREE_SCRIPT"
-	@echo "Applying standard formatting..."
-	@clang-format -i driver/useeplus_core.c driver/useeplus_protocol.c

@@ -54,24 +54,24 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
     libusb_clear_halt(deviceHandle_, LIBUSB_ENDPOINT_IN | UsbProtocol::VIDEO_ENDPOINT);
 
     uint8_t payload[26] = {0};
-    payload[2] = 0x02; // MJPEG Format Index
+    payload[2] = 0x02;  // MJPEG Format Index
     payload[3] = resolution.hw_index;
-    uint32_t interval = 10000000 / 30; // 30 FPS tick units
+    uint32_t interval = 10000000 / 30;  // 30 FPS tick units
     payload[4] = interval & 0xFF;
     payload[5] = (interval >> 8) & 0xFF;
     payload[6] = (interval >> 16) & 0xFF;
     payload[7] = (interval >> 24) & 0xFF;
 
-    int probeRet = libusb_control_transfer(
-        deviceHandle_, 0x21, 0x01, 0x0100, UsbProtocol::VIDEO_STREAM_INTERFACE,
-        payload, sizeof(payload), UsbConfig::USB_TIMEOUT);
+    int probeRet = libusb_control_transfer(deviceHandle_, 0x21, 0x01, 0x0100,
+                                           UsbProtocol::VIDEO_STREAM_INTERFACE, payload,
+                                           sizeof(payload), UsbConfig::USB_TIMEOUT);
     if (probeRet < 0) {
         throw std::runtime_error("Hardware resolution PROBE negotiation failed.");
     }
 
-    int commitRet = libusb_control_transfer(
-        deviceHandle_, 0x21, 0x01, 0x0200, UsbProtocol::VIDEO_STREAM_INTERFACE,
-        payload, sizeof(payload), UsbConfig::USB_TIMEOUT);
+    int commitRet = libusb_control_transfer(deviceHandle_, 0x21, 0x01, 0x0200,
+                                            UsbProtocol::VIDEO_STREAM_INTERFACE, payload,
+                                            sizeof(payload), UsbConfig::USB_TIMEOUT);
     if (commitRet < 0) {
         throw std::runtime_error("Hardware resolution COMMIT negotiation failed.");
     }

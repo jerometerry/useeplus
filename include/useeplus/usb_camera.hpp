@@ -31,7 +31,8 @@ class UsbCamera {
      * @throws std::runtime_error If the camera isn't plugged in, or if the OS refuses to let go of
      * it.
      */
-    UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution = SupportedResolutions::VGA_480P);
+    UsbCamera(const UsbDeviceInfo& target,
+              CameraResolution resolution = SupportedResolutions::VGA_480P);
 
     /**
      * @brief Safely power down the connection and give the camera back to the OS.

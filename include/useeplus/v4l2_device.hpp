@@ -1,13 +1,13 @@
 #pragma once
+#include <cstdint>
 #include <span>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 #include "camera_resolution.hpp"
 
 class V4l2Device {
-public:
+   public:
     V4l2Device(const std::string& device_path, CameraResolution target_resolution);
     ~V4l2Device();
 
@@ -23,7 +23,7 @@ public:
 
     void enqueue_buffer(uint32_t buffer_index);
 
-private:
+   private:
     struct MmapBuffer {
         void* start;
         size_t length;

@@ -1,13 +1,107 @@
 // SPDX-License-Identifier: GPL-2.0+ OR MIT
 
+/*
+ * Useeplus Protocol Structure (OSI Aligned)
+ *
+ * The hardware operates using a dual-layer encapsulation strategy.
+ * A complete Presentation-Layer (Layer 6) MJPEG image is known as a "Video Frame".
+ * Because Video Frames are large, they are chunked into smaller "Video Frame Fragments".
+ * Each fragment is then encapsulated in a Link-Layer (Layer 2) "USB Frame" for transport.
+ *
+ * | Byte Offset | Field Name            | Size | OSI Layer | Description                         |
+ * |-------------|-----------------------|------|-----------|-------------------------------------|
+ * | 0x00        | Start Frame Delimiter | 2    | L2 (USB)  | 0xBBAA (Little-Endian signature)    |
+ * | 0x02        | Device ID             | 1    | L2 (USB)  | 0x0B = Video, 0x07 = Gravity Sensor |
+ * | 0x03        | Payload Length        | 2    | L2 (USB)  | Total bytes following the USB Header|
+ * |-------------|-----------------------|------|-----------|-------------------------------------|
+ * | 0x05        | Frame ID              | 1    | L6 (Video)| Rolls on new Video Frame start      |
+ * | 0x06        | Device Number         | 1    | L6 (Video)| Secondary internal lens index       |
+ * | 0x07        | Flags                 | 1    | L6 (Video)| Bit 0: Gravity, Bit 1: Button       |
+ * | 0x08        | IMU Matrix            | 4    | L6 (Video)| 32-bit accelerometer telemetry      |
+ * |-------------|-----------------------|------|-----------|-------------------------------------|
+ * | 0x0C (12)   | Video Frame Fragment  | Var  | L6 (Video)| MJPEG fragment                      |
+ *
+ * Video Frame Assembly Rules
+ *
+ * A single complete Video Frame is reassembled by concatenating the Video Frame Fragments
+ * from dozens of smaller USB Frames sharing the same Frame ID.
+ *
+ * - Start of Video Frame: The fragment payload of the first USB Frame for a given Frame ID
+ * will begin with the JPEG SOI Marker (FF D8), usually followed by the APP0/JFIF headers.
+ *
+ * - Continuation: Subsequent USB Frames for the same Frame ID will contain raw
+ * JPEG stream data starting immediately at the Video Data Offset (Byte 0x0C).
+ *
+ * - End of Video Frame: The final USB Frame for a given Frame ID will contain the JPEG
+ * EOI Marker (FF D9) somewhere within its fragment block. Uninitialized padding bytes
+ * may exist between the EOI marker and the declared Payload Length.
+ *
+ * Memory Alignment and Uninitialized Memory
+ *
+ * 4KB Page Alignment
+ *
+ * The hardware's internal DMA (Direct Memory Access) buffers are aligned into
+ * 4-Kilobyte (4096 bytes) pages. A standard Useeplus Video USB Frame is exactly
+ * 944 bytes long (12 bytes of Protocol Overhead + 932 bytes of Video Frame Fragment).
+ *
+ * The hardware aggressively packs exactly four full USB Frames into a single 4KB
+ * page: 4 frames * 944 bytes = 3776 bytes.
+ *
+ * This packing leaves exactly 320 bytes of unused space at the tail end of
+ * every 4KB page (4096 - 3776 = 320).
+ *
+ * Uninitialized Memory
+ *
+ * The hardware does not zero out or initialize these 320 bytes before
+ * transmitting the USB buffer. The data in the unused memory is arbitrary,
+ * often containing valid Start Frame Delimiters from previous or newer USB Frames.
+ * There are no checksums built into the protocol for error detection, which poses a
+ * challenge when decoding the video stream.
+ *
+ * 1. Signature Check
+ *
+ * Every USB Frame evaluation begins by ensuring the current pointer sits exactly
+ * on the 0xBBAA Start Frame Delimiter and a valid Device ID (0x0B or 0x07). If this
+ * signature fails, the parser enters Seek Mode (see Step 4).
+ *
+ * 2. Ghost Header Look-Ahead
+ *
+ * Before the decoder ever reads or trusts the length field of a newly
+ * discovered signature, it performs a bounded look-ahead. It scans the next
+ * 160 bytes of memory.
+ *
+ * - If another perfect 0xBBAA signature is found within a short distance, it
+ * proves the hardware stuttered or the current header is a ghost remnant.
+ * - The decoder treats the current header as a ghost, advances the pointer to
+ * the newly discovered real header, skipping the "garbage data".
+ *
+ * 3. Length Validation
+ *
+ * If no ghost header is found, the decoder reads the length and sanity-checks it
+ * against an upper bound of UP_MAX_VIDEO_FRM_FRAG_LEN (1024 bytes).
+ *
+ * - If the length exceeds 1024, it means the decoder is looking at garbage data
+ * that happens to start with 0xBBAA. The decoder rejects the USB Frame and
+ * enters Seek Mode.
+ *
+ * 4. Seek Mode
+ *
+ * Whenever the signature fails, or a massive garbage length is detected, the
+ * decoder returns an INVALID_PKT state.
+ *
+ * - Continue the decoding loop, moving ahead by 1 byte. The decoder will
+ * continue incrementally until a valid 0xBBAA hardware signature is found, or
+ * until it exhausts the data arriving from the FIFO work queue.
+ */
+
 #include "useeplus_protocol.h"
 
 static bool up_check_ghost_hdr(u8 *buf, size_t len, size_t buf_off,
 			       size_t *u_hdr_off)
 {
 	struct up_usb_frm_hdr *u_hdr;
-	size_t		       ghost_lim;
-	size_t		       o;
+	size_t ghost_lim;
+	size_t o;
 
 	if (UP_USB_FRM_HDR_LEN + buf_off > len)
 		return false;
@@ -32,11 +126,11 @@ static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos,
 				       struct up_decode_state *state)
 {
 	struct up_video_frm_frag_hdr *v_hdr;
-	struct up_usb_frm_hdr	     *u_hdr;
-	u16			      u_frm_pl_len;
-	size_t			      u_hdr_off;
-	size_t			      v_hdr_off;
-	size_t			      buf_off;
+	struct up_usb_frm_hdr *u_hdr;
+	u16 u_frm_pl_len;
+	size_t u_hdr_off;
+	size_t v_hdr_off;
+	size_t buf_off;
 
 	u_hdr_off = 0;
 	buf_off = *cur_pos;
@@ -101,22 +195,22 @@ size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 {
 	void (*o_vfs)(void *context, u8 frame_id, u8 dev_num);
 	void (*o_vff)(void *context, u8 *data, size_t len);
+	struct up_video_frm_frag_hdr *v_hdr;
 	void (*o_vfic)(void *context);
 	void (*o_vfc)(void *context);
-	struct up_video_frm_frag_hdr *v_hdr;
-	struct up_decode_state	      state;
-	size_t			      video_data_start;
-	size_t			      video_data_len;
-	u8			     *video_data_ptr;
-	size_t			      img_size;
-	size_t			      soi_lim;
-	size_t			      cur_pos;
-	size_t			      v_off;
-	u8			      frame_id;
-	bool			      found;
-	u8			      dev_num;
-	void			     *ctx;
-	size_t			      i;
+	struct up_decode_state state;
+	size_t video_data_start;
+	size_t video_data_len;
+	u8 *video_data_ptr;
+	size_t img_size;
+	size_t soi_lim;
+	size_t cur_pos;
+	size_t v_off;
+	u8 frame_id;
+	bool found;
+	u8 dev_num;
+	void *ctx;
+	size_t i;
 
 	cur_pos = 0;
 	found = false;
