@@ -63,6 +63,13 @@ V4l2Device::~V4l2Device() {
         for (auto& buf : buffers_) {
             munmap(buf.start, buf.length);
         }
+
+	struct v4l2_requestbuffers req = {};
+        req.count = 0;
+        req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        req.memory = V4L2_MEMORY_MMAP;
+        ioctl(fd_, VIDIOC_REQBUFS, &req);
+
         close(fd_);
     }
 }

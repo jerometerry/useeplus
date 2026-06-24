@@ -1,7 +1,6 @@
 #include "v4l2_video_source.hpp"
 
 #include <sys/select.h>
-
 #include <iostream>
 
 void V4l2VideoSource::loop(V4l2Device* device) {
@@ -20,11 +19,14 @@ void V4l2VideoSource::loop(V4l2Device* device) {
                 if (handler_) {
                     handler_(frame.payload);
                 }
-
                 device->enqueue_buffer(frame.buffer_index);
             }
         } else if (r < 0) {
-            std::cerr << "[V4L2 Error] select() polling failed.\n";
+            if (errno == EINTR) {
+                break;
+            }
+
+	    std::cerr << "[V4L2 Error] select() polling failed.\n";
             break;
         }
     }

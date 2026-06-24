@@ -86,7 +86,9 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
 
 UsbCamera::~UsbCamera() {
     if (deviceHandle_) {
-        libusb_release_interface(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
+	libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
+
+	libusb_release_interface(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
         libusb_release_interface(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE);
 
         libusb_attach_kernel_driver(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
