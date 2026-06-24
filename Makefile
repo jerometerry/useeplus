@@ -1,5 +1,5 @@
 .PHONY: all clean format check-format test tidy cppcheck iwyu docs sanitize \
-	benchmark install-deps christmas-tree
+	benchmark install-deps christmas-tree kernel-export
 
 .DEFAULT_GOAL := all
 
@@ -14,19 +14,20 @@ endif
 CXXFLAGS := -std=c++2b -Wall -Wextra -g -fno-omit-frame-pointer -Wno-deprecated-declarations
 CFLAGS   := -Wall -Wextra -g -fno-omit-frame-pointer
 
-SRC_DIR          := src
-INC_DIR          := include/useeplus
-DRIVER_DIR       := driver
-BUILD_DIR        := build
-THIRD_PARTY_DIR  := third_party
-TEST_DIR         := tests
-BENCH_DIR        := benchmark
-APPS_DIR         := src/apps
-GEN_DIR          := generated
-HTML_FILE        := $(APPS_DIR)/index.html
-GENERATED_HPP    := $(GEN_DIR)/index_html.hpp
-LIBUSB_APP       := $(BUILD_DIR)/libusb_server
-V4L2_APP         := $(BUILD_DIR)/v4l2_server
+SRC_DIR           := src
+INC_DIR           := include/useeplus
+DRIVER_DIR        := driver
+BUILD_DIR         := build
+KERNEL_EXPORT_DIR := build/linux_kernel_export
+THIRD_PARTY_DIR   := third_party
+TEST_DIR          := tests
+BENCH_DIR         := benchmark
+APPS_DIR          := src/apps
+GEN_DIR           := generated
+HTML_FILE         := $(APPS_DIR)/index.html
+GENERATED_HPP     := $(GEN_DIR)/index_html.hpp
+LIBUSB_APP        := $(BUILD_DIR)/libusb_server
+V4L2_APP          := $(BUILD_DIR)/v4l2_server
 
 CORE_SRCS := $(DRIVER_DIR)/useeplus_protocol.c \
              $(SRC_DIR)/usb_camera.cpp \
@@ -228,10 +229,20 @@ TIDY_SRCS := $(filter-out %.c, $(CORE_SRCS) $(PROJECT_TEST_SRCS))
 IWYU_SRCS    := $(CORE_SRCS) $(PROJECT_TEST_SRCS)
 IWYU_TARGETS := $(addprefix iwyu-,$(IWYU_SRCS))
 
-all: $(CORE_DEPS) $(CORE_LIB) apps
+all: $(CORE_DEPS) $(CORE_LIB) apps kernel-export
 
 apps: $(BUILD_DIR)/libuseeplus.a $(GENERATED_HPP) $(APP_TARGETS)
 	@echo "All applications compiled successfully to $(BUILD_DIR)/"
+
+kernel-export:
+	@echo "Exporting clean Linux kernel driver files..."
+	@mkdir -p $(KERNEL_EXPORT_DIR)
+	@cp $(DRIVER_DIR)/useeplus_core.c $(KERNEL_EXPORT_DIR)/
+	@cp $(DRIVER_DIR)/useeplus_core.h $(KERNEL_EXPORT_DIR)/
+	@cp $(DRIVER_DIR)/useeplus_protocol.c $(KERNEL_EXPORT_DIR)/
+	@cp $(DRIVER_DIR)/useeplus_protocol_on_tree.h $(KERNEL_EXPORT_DIR)/useeplus_protocol.h
+	@echo "Export complete: $(KERNEL_EXPORT_DIR)/"
+	@ls -la $(KERNEL_EXPORT_DIR)
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -291,3 +302,4 @@ docs:
 	@echo "Generating API Documentation with Doxygen..."
 	@mkdir -p docs/api
 	@echo "PROJECT_NAME = useeplus\nINPUT = src include\nRECURSIVE = YES\nGENERATE_HTML = YES\nGENERATE_LATEX = NO\nMACRO_EXPANSION = YES\nPREDEFINED =" | doxygen -
+
