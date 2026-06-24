@@ -15,7 +15,7 @@ public:
     ~V4l2VideoSource() { stop(); }
 
     void start(V4l2Device& device) {
-        workerThread_ = std::jthread(&V4l2Driver::loop, this, &device);
+        workerThread_ = std::jthread(&V4l2VideoSource::loop, this, &device);
     }
 
     void stop() {
