@@ -977,7 +977,7 @@ static int up_alloc_urbs(struct up_drv_data *drv_data)
 	usb_dev = drv_data->usb.udev;
 	vid_in_pipe = usb_rcvbulkpipe(usb_dev, drv_data->usb.video_in_ep);
 	u_comp = up_read_bulk_callback;
-	itf =  = drv_data->usb.itf;
+	itf = drv_data->usb.itf;
 
 	for (i = 0; i < NUM_URBS; i++) {
 		urb = usb_alloc_urb(0, GFP_KERNEL);
