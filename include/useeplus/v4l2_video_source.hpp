@@ -9,7 +9,7 @@ class V4l2VideoSource {
 public:
     using FrameHandler = std::function<bool(std::span<const uint8_t>)>;
 
-    V4lV4l2VideoSourceDriver(FrameHandler handler, std::atomic<bool>* running)
+    V4l2VideoSource(FrameHandler handler, std::atomic<bool>* running)
         : handler_(std::move(handler)), running_(running) {}
 
     ~V4l2VideoSource() { stop(); }
