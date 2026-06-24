@@ -16,17 +16,18 @@ CFLAGS   := -Wall -Wextra -g -fno-omit-frame-pointer
 
 SRC_DIR          := src
 INC_DIR          := include/useeplus
+DRIVER_DIR       := driver
 BUILD_DIR        := build
 THIRD_PARTY_DIR  := third_party
 TEST_DIR         := tests
 BENCH_DIR        := benchmark
 
-CORE_SRCS := $(SRC_DIR)/usb_camera.cpp \
+CORE_SRCS := $(DRIVER_DIR)/useeplus_protocol.c \
+             $(SRC_DIR)/usb_camera.cpp \
              $(SRC_DIR)/usb_context.cpp \
              $(SRC_DIR)/usb_device_finder.cpp \
              $(SRC_DIR)/libusb_video_source.cpp \
              $(SRC_DIR)/useeplus_video_stream.cpp \
-             $(SRC_DIR)/useeplus_protocol.c \
              $(SRC_DIR)/mjpeg_server.cpp \
              $(SRC_DIR)/http_response_builder.cpp
 
@@ -67,6 +68,7 @@ endif
 LIBUSB_CFLAGS := $(shell pkg-config --cflags libusb-1.0)
 
 INCLUDES := -I$(INC_DIR) \
+            -I$(DRIVER_DIR) \
             -isystem $(THIRD_PARTY_DIR)/uWebSockets/src \
             -isystem $(THIRD_PARTY_DIR)/uSockets/src \
             $(patsubst -I%,-isystem %,$(LIBUSB_CFLAGS))
@@ -241,7 +243,7 @@ def sort_tree(m):
     lines.sort(key=len, reverse=True)
     return "\n" + "\n".join(lines) + "\n"
 
-files = ["src/useeplus_core.c", "src/useeplus_protocol.c"]
+files = ["driver/useeplus_core.c", "driver/useeplus_protocol.c"]
 for f in files:
     try:
         c = open(f).read()
@@ -258,4 +260,4 @@ christmas-tree:
 	@echo "Sorting local variable trees..."
 	@python3 -c "$$SORT_TREE_SCRIPT"
 	@echo "Applying standard formatting..."
-	@clang-format -i src/useeplus_core.c src/useeplus_protocol.c
+	@clang-format -i driver/useeplus_core.c driver/useeplus_protocol.c
