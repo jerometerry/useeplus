@@ -62,13 +62,13 @@ void LibusbVideoSource::loop(const UsbDeviceInfo& target, CameraResolution resol
 
     auto transferPoolGuard = std::unique_ptr<std::vector<libusb_transfer*>,
                                              std::function<void(std::vector<libusb_transfer*>*)>>{
+        &transferPool_, [this](std::vector<libusb_transfer*>* pool) {
             // Halt the hardware FIRST while the OS is still actively draining the USB wire.
             // This prevents the camera's internal memory from overflowing and stalling.
             if (camera_) {
                 camera_->haltHardware();
             }
 
-            &transferPool_, [this](std::vector<libusb_transfer*>* pool) {
             for (auto* transfer : *pool) {
                 libusb_cancel_transfer(transfer);
             }
