@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT OR GPL-2.0-only */
-#ifndef USEEPLUS_PROTOCOL_H
-#define USEEPLUS_PROTOCOL_H
+#ifndef _USEEPLUS_PROTOCOL_H_
+#define _USEEPLUS_PROTOCOL_H_
 
 #include <linux/types.h>
 #include <asm/byteorder.h>
@@ -205,4 +205,4 @@ up_is_valid_video_frm_frag_hdr(const struct up_video_frm_frag_hdr *hdr)
 	return true;
 }
 
-#endif /* USEEPLUS_PROTOCOL_H */
+#endif /* _USEEPLUS_PROTOCOL_H_ */
