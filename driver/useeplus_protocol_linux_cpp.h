@@ -36,7 +36,7 @@ struct up_decoder_callbacks {
 
 struct up_decoder {
 	struct up_decoder_callbacks cb;
-	void			   *context;
+	void *context;
 
 	bool building_frame;
 	bool eof_reached;
