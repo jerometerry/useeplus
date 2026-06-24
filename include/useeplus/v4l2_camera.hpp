@@ -22,22 +22,10 @@
 #include <utility>
 #include <vector>
 
+#include "camera_resolution.hpp"
 #include "constants.hpp"
 #include "mjpeg_server.hpp"
 #include "video_frame_buffer.hpp"
-
-struct CameraResolution {
-    uint32_t width;
-    uint32_t height;
-
-    bool operator==(const CameraResolution&) const = default;
-};
-
-namespace SupportedResolutions {
-constexpr CameraResolution HD_720P{1280, 720};
-constexpr CameraResolution VGA_480P{640, 480};
-constexpr CameraResolution LOW_240P{320, 240};
-}  // namespace SupportedResolutions
 
 class V4l2Camera {
    public:
@@ -87,8 +75,7 @@ class V4l2Camera {
                       << target_resolution.height << ", but driver fell back to "
                       << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height << "\n";
 
-            active_resolution_.width = fmt.fmt.pix.width;
-            active_resolution_.height = fmt.fmt.pix.height;
+            active_resolution_ = SupportedResolutions::getClosest(fmt.fmt.pix.width, fmt.fmt.pix.height);
         }
 
         struct v4l2_requestbuffers req = {};

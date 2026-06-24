@@ -24,7 +24,7 @@ BENCH_DIR        := benchmark
 CORE_SRCS := $(SRC_DIR)/usb_camera.cpp \
              $(SRC_DIR)/usb_context.cpp \
              $(SRC_DIR)/usb_device_finder.cpp \
-             $(SRC_DIR)/usb_driver.cpp \
+             $(SRC_DIR)/libusb_video_source.cpp \
              $(SRC_DIR)/useeplus_video_stream.cpp \
              $(SRC_DIR)/useeplus_protocol.c \
              $(SRC_DIR)/mjpeg_server.cpp \

@@ -1,4 +1,4 @@
-#include "usb_driver.hpp"
+#include "libusb_video_source.hpp"
 
 #include <libusb.h>
 #include <sys/time.h>
@@ -21,25 +21,25 @@
 #include "usb_camera.hpp"
 #include "usb_device_info.hpp"
 
-UsbDriver::UsbDriver(TransferHandler transferHandler, std::atomic<bool>* running)
+LibusbVideoSource::LibusbVideoSource(TransferHandler transferHandler, std::atomic<bool>* running)
     : transferHandler_(std::move(transferHandler)), running_(running) {}
 
-UsbDriver::~UsbDriver() {
+LibusbVideoSource::~LibusbVideoSource() {
     stop();
 }
 
-void UsbDriver::start(const UsbDeviceInfo& target, uint8_t formatIndex) {
-    workerThread_ = std::jthread(&UsbDriver::loop, this, target, formatIndex);
+void LibusbVideoSource::start(const UsbDeviceInfo& target, CameraResolution resolution) {
+    workerThread_ = std::jthread(&LibusbVideoSource::loop, this, target, resolution);
 }
 
-void UsbDriver::stop() {
+void LibusbVideoSource::stop() {
     if (workerThread_.joinable()) {
         workerThread_.join();
     }
 }
 
-void UsbDriver::loop(const UsbDeviceInfo& target, uint8_t formatIndex) {
-    camera_ = std::make_unique<UsbCamera>(target, formatIndex);
+void LibusbVideoSource::loop(const UsbDeviceInfo& target, CameraResolution resolution) {
+    camera_ = std::make_unique<UsbCamera>(target, resolution);
 
     uint8_t* rawDmaBuffer = reinterpret_cast<uint8_t*>(
         libusb_dev_mem_alloc(camera_->getRawHandle(), UsbConfig::DMA_BUFFER_SIZE));
@@ -126,8 +126,8 @@ void UsbDriver::loop(const UsbDeviceInfo& target, uint8_t formatIndex) {
     }
 }
 
-void LIBUSB_CALL UsbDriver::transferCallback(struct libusb_transfer* transfer) {
-    auto* driver = static_cast<UsbDriver*>(transfer->user_data);
+void LIBUSB_CALL LibusbVideoSource::transferCallback(struct libusb_transfer* transfer) {
+    auto* driver = static_cast<LibusbVideoSource*>(transfer->user_data);
     if (!driver) {
         [[unlikely]] return;
     }

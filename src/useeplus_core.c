@@ -224,15 +224,15 @@ static int up_s_fmt_vid_cap(struct file *file, void *priv,
 		return -EBUSY;
 
 	if (f->fmt.pix.width >= 1280 || f->fmt.pix.height >= 720) {
-		target_hardware_index = 3;
+		target_hardware_index = UP_RES_720P;
 		drv_data->v4l2.width = 1280;
 		drv_data->v4l2.height = 720;
 	} else if (f->fmt.pix.width <= 320 || f->fmt.pix.height <= 240) {
-		target_hardware_index = 2;
+		target_hardware_index = UP_RES_240P;
 		drv_data->v4l2.width = 320;
 		drv_data->v4l2.height = 240;
 	} else {
-		target_hardware_index = 1;
+		target_hardware_index = UP_RES_480P;
 		drv_data->v4l2.width = 640;
 		drv_data->v4l2.height = 480;
 	}

@@ -66,15 +66,14 @@ struct up_drv_data {
 	} usb;
 
 	struct {
-		struct video_device video_dev;
-		struct v4l2_device  v4l2_dev;
-
-		struct vb2_queue queue;
+		struct video_device      video_dev;
+		struct v4l2_device       v4l2_dev;
+		struct vb2_queue         queue;
 		// Mutex protecting the video_queue
-		struct mutex lock;
-		u32	     height;
-		u32	     width;
-		u8           current_hw_index;
+		struct mutex             lock;
+		u32	                 height;
+		u32	                 width;
+		enum up_resolution_index current_hw_index;
 	} v4l2;
 
 	struct {

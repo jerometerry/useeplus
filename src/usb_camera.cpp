@@ -15,7 +15,7 @@
 #include "constants.hpp"
 #include "usb_device_info.hpp"
 
-UsbCamera::UsbCamera(const UsbDeviceInfo& target, uint8_t formatIndex) {
+UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
     if (libusb_init(&context_) < 0) {
         throw std::runtime_error("libusb_init failed");
     }
@@ -54,8 +54,8 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, uint8_t formatIndex) {
     libusb_clear_halt(deviceHandle_, LIBUSB_ENDPOINT_IN | UsbProtocol::VIDEO_ENDPOINT);
 
     uint8_t payload[26] = {0};
-    payload[2] = 0x02;          // MJPEG Format Index
-    payload[3] = formatIndex;   // Resolution Index (1: 480p, 2: 240p, 3: 720p)
+    payload[2] = 0x02; // MJPEG Format Index
+    payload[3] = resolution.hw_index;
     uint32_t interval = 10000000 / 30; // 30 FPS tick units
     payload[4] = interval & 0xFF;
     payload[5] = (interval >> 8) & 0xFF;

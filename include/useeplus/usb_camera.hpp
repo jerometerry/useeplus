@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "camera_resolution.hpp"
 #include "usb_device_info.hpp"
 
 /**
@@ -26,10 +27,11 @@ class UsbCamera {
      * claims the necessary USB communication channels, and sends the exact sequence of bytes
      * required to wake the camera up and command it to start streaming.
      * @param target The specific camera hardware to connect to (usually found via listAvailable).
+     * @param resolution
      * @throws std::runtime_error If the camera isn't plugged in, or if the OS refuses to let go of
      * it.
      */
-    UsbCamera(const UsbDeviceInfo& target, uint8_t formatIndex = 1);
+    UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution = SupportedResolutions::VGA_480P);
 
     /**
      * @brief Safely power down the connection and give the camera back to the OS.

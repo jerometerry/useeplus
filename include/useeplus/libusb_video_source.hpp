@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 
+#include "camera_resolution.hpp"
 #include "constants.hpp"
 
 class UsbCamera;
@@ -19,7 +20,7 @@ struct UsbDeviceInfo;
  * @details Isolates the raw libusb C-API from the application logic, handling DMA memory
  * allocation, bulk transfer submissions, and safe teardown mechanics.
  */
-class UsbDriver {
+class LibusbVideoSource {
    public:
     /**
      * @brief Signature for the callback fired when a USB payload arrives.
@@ -32,16 +33,16 @@ class UsbDriver {
      * @param transferHandler The callback to execute when a chunk of data is successfully read.
      * @param running Pointer to the global atomic shutdown flag.
      */
-    explicit UsbDriver(TransferHandler transferHandler, std::atomic<bool>* running);
+    explicit LibusbVideoSource(TransferHandler transferHandler, std::atomic<bool>* running);
 
-    ~UsbDriver();
+    ~LibusbVideoSource();
 
     /**
      * @brief Spawns a background worker thread and begins polling the target hardware.
      * @param target The verified USB device descriptor to connect to.
      * @param formatIndex
      */
-    void start(const UsbDeviceInfo& target, uint8_t formatIndex = 1);
+    void start(const UsbDeviceInfo& target, CameraResolution resolution = SupportedResolutions::VGA_480P);
 
     /**
      * @brief Safely cancels all active USB transfers and joins the worker thread.
@@ -58,7 +59,7 @@ class UsbDriver {
     std::vector<libusb_transfer*> transferPool_;
     std::vector<uint8_t> transferMemory_;
 
-    void loop(const UsbDeviceInfo& target, uint8_t formatIndex);
+    void loop(const UsbDeviceInfo& target, CameraResolution resolution);
 
     static void LIBUSB_CALL transferCallback(struct libusb_transfer* transfer);
 };

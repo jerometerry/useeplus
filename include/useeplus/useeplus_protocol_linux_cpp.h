@@ -155,6 +155,12 @@ enum up_hw_signatures {
 	MAX_DEV_NUM = 1,
 };
 
+enum up_resolution_index {
+	UP_RES_480P = 1,
+	UP_RES_240P = 2,
+	UP_RES_720P = 3,
+};
+
 enum up_jpeg_marker {
 	JPEG_DEL = 0xFF,
 	JPEG_SOI = 0xD8,
