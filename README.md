@@ -1,10 +1,9 @@
 Geek szitman supercamera
 
-| vendor id | prpduct id |
+| vendor id | product id |
 |-----------|------------|
 | 2ce3      | 3828       |
 | 0329      | 2022       |
-|-----------|------------|
 
 https://github.com/jmz3/EndoscopeCamera
 
