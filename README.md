@@ -47,6 +47,7 @@ I was able to build a V4L2 Linux Driver that passes all the v4l2-compliance test
 - LibUSB Driver
 - High performance MJPEG streaming servers, based on uSockers / uWebSockets
 - Zero-allocation design after startup, by reservng 128 bytes at the beginnng of all buffers to write HTTP headers
+- Code profiled with bpftrace scripts to identify and resolve memory allcations
 - C++ Implementation of the Java LMAX Disruptor patrern
 - Makefile for building, testing, and benchmarking
 - Makefile configured to use Zig compiler. Can be switched to GCC or Clang easily
