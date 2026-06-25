@@ -1,7 +1,7 @@
 Geek szitman supercamera
 
 | vendor id | product id |
-|-----------|------------|
+| --------- | ---------- |
 | 2ce3      | 3828       |
 | 0329      | 2022       |
 
