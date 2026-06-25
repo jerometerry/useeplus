@@ -83,6 +83,30 @@ detects and skips these **"Ghost Headers"** .
 
 ## Useeplus Dual-Layer Protocol Map
 
+This is an ideal USB Frame containing a valid JPEG payload. Decoding of a live video feed from the supercamera is far from the ideal.
+
+The decoding algorithm uses fuzzy matching to extract JPEG data. It's helpful to have some heuristics
+
+- Testing reveals that the supercamera delivers USB frames for JPEG fragments that are 944 bytes
+  - 5 bytes for USB Frame Header, 7 bytes for the Video Frame Header, 932 bytes available for JPEG data
+- Video Frame ID is a rolling ID that groups JPEG fragments from the same frame
+  - When Frame ID changes, start a new JPEG, delivering the accumulated JPEG fragments as a complete frame
+- Device Number identifies the camera lens, which will be either 0 or 1.
+  - If a Video Frame has a Device Number > 1, it is not valid
+- The Hardware Flags field contains 1 bit that indicates it's a gravity sensor
+  - if (flags & 0x01) is not 0, the decoder ignores the frame.
+  - This might be worth digging into in the future.
+  - Filtering out video frames where this bit is set works well with the camera I'm testing with
+- USB frames start with 0xBBAA, and Device ID must be either 0x0B (video) or 0x07 (gravity sensor)
+  - 0xBBAA0B or 0xBBAA07 denote the start of a new frame, except if those bytes happen to belong to a valid JPEG image
+  - The distance between two valid SoF and Device ID byte sequences has to be some distance apart for it to be a valid JPEG fragment
+  - This heuristic helps us identify if we are matching a valid SoF / Device ID while we're waiting for JPEG SOI
+  - If we see 2 of these byte sequences within 160 bytes of each other, we treat the earlier one as a ghost, and carry on from the latest one
+- JPEG SOI and JPEG EOI markers are what we really want to find.
+- Decoding starts by finding the first valid usb frame and video frame headers, then looks for the JPEG SOI indicator
+- Once we find a valid usb frame / video frame fragment followed by JPEG SOI, we then look for JPEG EOI
+- Once we find a valid usb frame / video frame fragment followed by JPEG EOI, we then complete the previous JPEG and restart the process
+
 | Byte Address | OSI Layer      | Field Name              | Hex Value Example | Description / C Struct Field mapping                         |
 | ------------ | -------------- | ----------------------- | ----------------- | ------------------------------------------------------------ |
 | 00 - 01      | **L2 (USB)**   | Start Frame Delimiter   | aa bb             | `0xBBAA` (Little-Endian) `le_delimiter`                      |
