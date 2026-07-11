@@ -34,9 +34,7 @@ The supercamera defaults to 640x480, and no existing drivers could get a higher 
 
 I started from where hbens and jmz3 left things, and dug deep to figure out how this camera really works.
 
-I was able to get the camera to operate in 3 different resolutions: 640x480, 320x240, and 1280x960.
-
-I also reverse engineered the custom protocol, including the quirks that make decoding the Useeplus protocol challenging.
+The foundational reverse-engineering of the `com.useeplus.protocol` was primarily done by hbens. Building upon that proof-of-concept, I expanded the protocol decoding to handle specific quirks and enable the camera to operate in 3 different resolutions: 640x480, 320x240, and 1280x960.
 
 ## V4L2 Compliance Testing
 
@@ -62,27 +60,21 @@ I was able to build a V4L2 Linux Driver that passes all the v4l2-compliance test
 
 ## ⚠️ Notice Regarding AI-Assisted Generation & Upstreaming
 
-Please note that while the core architecture, Useeplus protocol reverse-engineering, and
-overarching design of this project are my own, the specific implementations of the Video4Linux
-(V4L2) and VideoBuffer2 (VB2) subsystems were heavily assisted by AI (Google Gemini). AI was also
-utilized for Makefile automation and restructuring tests to ensure the code passed
-`v4l2-compliance` and `checkpatch.pl`.
+Please note that while the core architecture and overarching design of this project are my own, the foundational Useeplus protocol reverse-engineering was primarily done by [hbens](https://github.com/hbens/geek-szitman-supercamera). Additionally, the specific implementations of the Video4Linux (V4L2) and VideoBuffer2 (VB2) subsystems were heavily assisted by AI (Google Gemini). AI was also utilized for Makefile automation and restructuring tests to ensure the code passed `v4l2-compliance` and `checkpatch.pl`.
 
 **If you fork this project with the intent to submit a patch to the Linux Kernel Mailing List (LKML):**
 You assume all responsibility for the codebase. Do not blindly submit this repository as a patch. The Linux kernel community has strict, justified standards regarding AI provenance, and AI suggestions can introduce subtle kernel-level regressions (e.g., memory management, locking, or subsystem-specific behaviors).
 
 You must thoroughly audit, understand, and be prepared to independently defend every line of the V4L2/VB2 integration before upstreaming.
 
-## 🧠 Acknowledgements
+## 🧠 Acknowledgements & Copyright Notice
 
-This project was heavily inspired by the reverse-engineering work of
-[hbens](https://github.com/hbens/geek-szitman-supercamera), [jmz3](https://github.com/jmz3/EndoscopeCamera), and
-[doctormo](https://github.com/doctormo). Their original proofs-of-concept laid the groundwork for decoding the
-`com.useeplus.protocol`.
+The Useeplus protocol reverse-engineering work was primarily done by [hbens](https://github.com/hbens/geek-szitman-supercamera), as documented in the `geek-szitman-supercamera` repository. The original proof-of-concept code (`supercamera_poc.cpp`) upon which the decoding logic is based is distributed under the **Creative Commons Zero v1.0 Universal (CC0-1.0)** license.
+
+This project was also heavily inspired by the work of [jmz3](https://github.com/jmz3/EndoscopeCamera) and [doctormo](https://github.com/doctormo). Their efforts laid the groundwork for this project and making `com.useeplus.protocol` accessible.
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-For information regarding the third-party libraries used in this project, please see the
-[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES.md) file.
+For information regarding the third-party libraries used in this project, please see the [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES.md) file.
