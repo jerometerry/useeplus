@@ -1276,6 +1276,8 @@ static void up_on_frame_incomplete(void *context)
 	 * Return the buffer to the V4L2 subsystem with an error state to
 	 * prevent kernel memory starvation and notify userspace of the tear.
 	 */
+	vb2_buf->timestamp = ktime_get_ns();
+	v4l2_buf->sequence = drv_data->pipeline.sequence++;
 	vb2_buffer_done(vb2_buf, VB2_BUF_STATE_ERROR);
 
 	/*
@@ -1301,16 +1303,15 @@ static void up_on_frame_complete(void *context)
 	v4l2_buf = &active_buf->vb2_buffer;
 	vb2_buf = &v4l2_buf->vb2_buf;
 
+	vb2_buf->timestamp = ktime_get_ns();
+	v4l2_buf->sequence = drv_data->pipeline.sequence++;
+
 	vff_len = drv_data->decoder.active_pl_len;
 	if (vff_len < 2) {
 		drv_data->dbg.frames_dropped_eoi++;
 		vb2_buffer_done(vb2_buf, VB2_BUF_STATE_ERROR);
 	} else {
 		vb2_set_plane_payload(vb2_buf, 0, vff_len);
-
-		vb2_buf->timestamp = ktime_get_ns();
-		v4l2_buf->sequence = drv_data->pipeline.sequence++;
-
 		vb2_buffer_done(vb2_buf, VB2_BUF_STATE_DONE);
 
 		drv_data->dbg.frames_delivered++;
@@ -1333,7 +1334,11 @@ static void up_on_frame_start(void *context, u8 frame_id, u8 dev_num)
 	if (active_buf) {
 		v4l2_buf = &active_buf->vb2_buffer;
 		vb2_buf = &v4l2_buf->vb2_buf;
+
+		vb2_buf->timestamp = ktime_get_ns();
+		v4l2_buf->sequence = drv_data->pipeline.sequence++;
 		vb2_buffer_done(vb2_buf, VB2_BUF_STATE_ERROR);
+
 		drv_data->decoder.active_buf = NULL;
 	}
 
@@ -1375,6 +1380,8 @@ static void up_on_video_payload(void *context, u8 *data, size_t len)
 		dev = &drv_data->usb.itf->dev;
 		dev_err_ratelimited(dev, "useeplus: Overflow Prevention.\n");
 
+		vb2_buf->timestamp = ktime_get_ns();
+		v4l2_buf->sequence = drv_data->pipeline.sequence++;
 		vb2_buffer_done(vb2_buf, VB2_BUF_STATE_ERROR);
 
 		drv_data->decoder.active_buf = NULL;
