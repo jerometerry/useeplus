@@ -538,11 +538,13 @@ jterry@authentic-nerd:~/github/useeplus-rpi/rpi-linux $ cat .config | grep USEEP
 CONFIG_USB_USEEPLUS=m
 ```
 
-### Compiling
+### Compiling First Time
 
-With Useeplus driver enabled in the config, compile the Linux Kernel using `make -j$(nproc)`. This
-runs make (in the linux tree root), splitting the work in parallel jobs across all cores. The first
-build will take awhile.
+To ensure that the useeplus driver module loads cleanly without tainting the kernel, I compile and
+install the linux kernel, copy it into /boot/firmware, and reboot.
+
+With Useeplus driver enabled in the config, here's the commands I run to build and instlal the
+kernel and module, and ensure that rebooting loads this new kernel so the driver loads cleanly.
 
 ```bash
 make -j$(nproc) Image.gz modules dtbs
@@ -561,6 +563,20 @@ sudo cp arch/arm64/boot/dts/overlays/README /boot/firmware/overlays/
 sudo reboot
 ```
 
+### Iteratvie Development
+
+For rapid testing of changes to the useeplus driver, I don't want to recompile the whole kernel or
+install all modules. With the latest kenel running, I run the following commands to compile,
+install and load the latest useeplus driver.
+
+```bash
+sudo rmmod useeplus
+make -j$(nproc) M=drivers/media/usb/useeplus modules
+sudo make M=drivers/media/usb/useeplus modules_install
+sudo depmod -a
+sudo modprobe useeplus
+```
+
 ### Loading Useeplus
 
 After installing the modules, those modules aren't loaded automatically. To confirm, run lsmod
@@ -568,12 +584,6 @@ After installing the modules, those modules aren't loaded automatically. To conf
 ```bash
 jterry@authentic-nerd:~/github/useeplus-rpi/rpi-linux $ lsmod | grep useeplus
 jterry@authentic-nerd:~/github/useeplus-rpi/rpi-linux $
-```
-
-After installing new modules, rebuild the module dependencies.
-
-```bash
-sudo depmod -a
 ```
 
 Test if the useeplus driver is ready to be loaded by running modinfo.
@@ -593,6 +603,167 @@ videobuf2_vmalloc      65536  1 useeplus
 videobuf2_v4l2         49152  4 useeplus,pisp_be,rpi_hevc_dec,v4l2_mem2mem
 videodev              360448  5 useeplus,pisp_be,rpi_hevc_dec,videobuf2_v4l2,v4l2_mem2mem
 videobuf2_common       98304  8 useeplus,videobuf2_vmalloc,pisp_be,rpi_hevc_dec,videobuf2_dma_contig,videobuf2_v4l2,v4l2_mem2mem,videobuf2_memops
+```
+
+Check dmesg to confirm useeplus driver was loaded
+
+```bash
+jterry@authentic-nerd:~ $ dmesg | tail -n 5
+[    8.554468] macb 1f00100000.ethernet eth0: PHY [1f00100000.ethernet-ffffffff:01] driver [Broadcom BCM54213PE] (irq=POLL)
+[    8.555352] macb 1f00100000.ethernet eth0: configuring for phy/rgmii-id link mode
+[    8.558387] macb 1f00100000.ethernet: gem-ptp-timer ptp clock registered.
+[    8.565715] brcmfmac: brcmf_cfg80211_set_power_mgmt: power save enabled
+[  316.756291] usbcore: registered new interface driver useeplus
+```
+
+### Plugging in Borescope
+
+When plugging in the borescope to the Raspberry Pi, dmesg should show the USB events, followec by
+the Useeplus driver messages.
+
+```bash
+[  470.534907] usb 3-1: new high-speed USB device number 2 using xhci-hcd
+[  470.677076] usb 3-1: New USB device found, idVendor=0329, idProduct=2022, bcdDevice= 1.00
+[  470.677083] usb 3-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[  470.677088] usb 3-1: Product: supercamera
+[  470.677093] usb 3-1: Manufacturer: Geek szitman
+[  470.677097] usb 3-1: SerialNumber: 022018050100030
+[  470.688119] useeplus 3-1:1.1: Useeplus borescope identified
+[  473.630197] useeplus 3-1:1.1: Device connected.
+```
+
+List V4L2 devices to confirm the useeplus driver initialized.
+
+```bash
+jterry@authentic-nerd:~ $ v4l2-ctl --list-devices
+pispbe (platform:1000880000.pisp_be):
+	/dev/video20
+	/dev/video21
+	/dev/video22
+	/dev/video23
+	/dev/video24
+	/dev/video25
+	/dev/video26
+	/dev/video27
+	/dev/video28
+	/dev/video29
+	/dev/video30
+	/dev/video31
+	/dev/video32
+	/dev/video33
+	/dev/video34
+	/dev/video35
+	/dev/media0
+	/dev/media1
+
+rpi-hevc-dec (platform:rpi-hevc-dec):
+	/dev/video19
+	/dev/media2
+
+useeplus protocol cameras (usb-xhci-hcd.1-1):
+	/dev/video0
+
+```
+
+### V4L2 Compliance
+
+Verify the useeplus driver is passing the V4L2 compliance tests
+
+```bash
+jterry@authentic-nerd:~ $ v4l2-compliance -d /dev/video0
+v4l2-compliance 1.30.1, 64 bits, 64-bit time_t
+
+Compliance test for useeplus device /dev/video0:
+
+Driver Info:
+	Driver name      : useeplus
+	Card type        : useeplus protocol cameras
+	Bus info         : usb-xhci-hcd.1-1
+	Driver version   : 6.18.37
+	Capabilities     : 0x85200001
+		Video Capture
+		Read/Write
+		Streaming
+		Extended Pix Format
+		Device Capabilities
+	Device Caps      : 0x05200001
+		Video Capture
+		Read/Write
+		Streaming
+		Extended Pix Format
+
+Required ioctls:
+	test VIDIOC_QUERYCAP: OK
+	test invalid ioctls: OK
+
+Allow for multiple opens:
+	test second /dev/video0 open: OK
+	test VIDIOC_QUERYCAP: OK
+	test VIDIOC_G/S_PRIORITY: OK
+	test for unlimited opens: OK
+
+Debug ioctls:
+	test VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)
+	test VIDIOC_LOG_STATUS: OK (Not Supported)
+
+Input ioctls:
+	test VIDIOC_G/S_TUNER/ENUM_FREQ_BANDS: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)
+	test VIDIOC_ENUMAUDIO: OK (Not Supported)
+	test VIDIOC_G/S/ENUMINPUT: OK
+	test VIDIOC_G/S_AUDIO: OK (Not Supported)
+	Inputs: 1 Audio Inputs: 0 Tuners: 0
+
+Output ioctls:
+	test VIDIOC_G/S_MODULATOR: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_ENUMAUDOUT: OK (Not Supported)
+	test VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)
+	test VIDIOC_G/S_AUDOUT: OK (Not Supported)
+	Outputs: 0 Audio Outputs: 0 Modulators: 0
+
+Input/Output configuration ioctls:
+	test VIDIOC_ENUM/G/S/QUERY_STD: OK (Not Supported)
+	test VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)
+	test VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)
+	test VIDIOC_G/S_EDID: OK (Not Supported)
+
+Control ioctls (Input 0):
+	test VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK (Not Supported)
+	test VIDIOC_QUERYCTRL: OK (Not Supported)
+	test VIDIOC_G/S_CTRL: OK (Not Supported)
+	test VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)
+	test VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)
+	test VIDIOC_G/S_JPEGCOMP: OK (Not Supported)
+	Standard Controls: 0 Private Controls: 0
+
+Format ioctls (Input 0):
+	test VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK
+	test VIDIOC_G/S_PARM: OK
+	test VIDIOC_G_FBUF: OK (Not Supported)
+	test VIDIOC_G_FMT: OK
+	test VIDIOC_TRY_FMT: OK
+	test VIDIOC_S_FMT: OK
+	test VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)
+	test Cropping: OK (Not Supported)
+	test Composing: OK (Not Supported)
+	test Scaling: OK (Not Supported)
+
+Codec ioctls (Input 0):
+	test VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)
+	test VIDIOC_G_ENC_INDEX: OK (Not Supported)
+	test VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)
+
+Buffer ioctls (Input 0):
+	test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
+	test CREATE_BUFS maximum buffers: OK
+	test VIDIOC_REMOVE_BUFS: OK
+	test VIDIOC_EXPBUF: OK (Not Supported)
+	test Requests: OK (Not Supported)
+	test blocking wait: OK
+
+Total for useeplus device /dev/video0: 48, Succeeded: 48, Failed: 0, Warnings: 0
 ```
 
 ## Useeplus Driver Structure

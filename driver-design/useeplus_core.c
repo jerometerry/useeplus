@@ -900,7 +900,14 @@ static void up_stop_streaming(struct vb2_queue *vq)
 	drv_data = vb2_get_drv_priv(vq);
 
 	if (test_and_clear_bit(STREAM_HW_ACTIVE, &drv_data->pipeline.streaming)) {
-                up_stop_video(drv_data);
+		up_stop_video(drv_data);
+
+		/*
+		 * Force the host controller to send a SET_INTERFACE packet
+		 * to drop the camera into Alternate Setting 0. This instantly flushes
+		 * the camera's internal FIFOs and stops hardware transmission.
+		 */
+		usb_set_interface(drv_data->usb.udev, UP_VIDEO_INTERFACE, 0);
         }
 
 	/*
@@ -983,6 +990,24 @@ static int up_start_streaming(struct vb2_queue *vq, unsigned int count)
 	drv_data->decoder.workspace_len = 0;
 	kfifo_reset(&drv_data->decoder.fifo);
 	spin_unlock_irqrestore(&drv_data->pipeline.ready_lock, flags);
+
+	/*
+	 * Elevate the interface back to Alternate Setting 1 to power up the lens,
+	 * and clear the endpoint halts to synchronize the USB data toggle bits before
+	 * sending the PROBE and COMMIT resolution negotiation packets.
+	 */
+	retval = usb_set_interface(drv_data->usb.udev, UP_VIDEO_INTERFACE, UP_ALT_VIDEO_ENABLE);
+	if (retval) {
+		dev_err(&itf->dev, "usb_set_interface failed: %d\n", retval);
+		goto error_start;
+	}
+
+	retval = usb_clear_halt(drv_data->usb.udev,
+				usb_rcvbulkpipe(drv_data->usb.udev, drv_data->usb.video_in_ep));
+	if (retval) {
+		dev_err(&itf->dev, "usb_clear_halt failed: %d\n", retval);
+		goto error_start;
+	}
 
 	u8 hw_idx = drv_data->v4l2.current_hw_index ?
 			    drv_data->v4l2.current_hw_index :
@@ -1745,18 +1770,17 @@ static int up_probe(struct usb_interface *itf, const struct usb_device_id *id)
 
 	kfree(hb_sink);
 
-	retval = usb_set_interface(usb_dev, UP_VIDEO_INTERFACE,
-				   UP_ALT_VIDEO_ENABLE);
+	/*
+	 * Park the camera in Alternate Setting 0 (dormant mode)
+	 * when it is first plugged in. The stream lifecycle hooks will
+	 * manage elevating it to Alternate Setting 1.
+	 */
+	retval = usb_set_interface(usb_dev, UP_VIDEO_INTERFACE, 0);
 	if (retval) {
 		dev_err(&itf->dev, "usb_set_interface failed with error %d\n",
 			retval);
 		goto error_unreg_v4l2;
 	}
-
-	retval = usb_clear_halt(usb_dev, vid_in_pipe);
-	if (retval)
-		dev_info(&itf->dev, "usb_clear_halt failed with error %d\n",
-			 retval);
 
 	retval = up_alloc_urbs(drv_data);
 	if (retval)
