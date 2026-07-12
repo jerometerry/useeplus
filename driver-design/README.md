@@ -42,14 +42,14 @@ static int __init up_init(void)
 	return usb_register(&up_driver);
 }
 
+module_exit(up_exit);
+module_init(up_init);
+
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Jerome Terry");
 MODULE_DESCRIPTION("V4L2 driver for Useeplus protocol cameras");
 MODULE_VERSION("0.1.0");
 MODULE_DEVICE_TABLE(usb, up_table);
-
-module_exit(up_exit);
-module_init(up_init);
 ```
 
 Working back to the top of the file, methods are ordered such that forward declarations are avoided.
@@ -748,7 +748,7 @@ static const struct vb2_ops up_vb2_ops = {
 };
 ```
 
-**v4l2_file_operations**å
+**v4l2_file_operations**
 
 ```c
 static int up_v4l2_release(struct file *file);
@@ -819,7 +819,17 @@ static struct usb_driver up_driver = {
 **Module Configuration**
 
 ```c
-module_usb_driver(up_driver);
+static void __exit up_exit(void)
+{
+	pr_debug("useeplus_v4l2: Module exited.\n");
+	usb_deregister(&up_driver);
+}
+
+static int __init up_init(void)
+{
+	pr_debug("useeplus_v4l2: Module initialized.\n");
+	return usb_register(&up_driver);
+}
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Jerome Terry");
