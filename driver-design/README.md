@@ -595,17 +595,20 @@ videodev              360448  5 useeplus,pisp_be,rpi_hevc_dec,videobuf2_v4l2,v4l
 videobuf2_common       98304  8 useeplus,videobuf2_vmalloc,pisp_be,rpi_hevc_dec,videobuf2_dma_contig,videobuf2_v4l2,v4l2_mem2mem,videobuf2_memops
 ```
 
-## Useeplus Driver Skeleton
+## Useeplus Driver Structure
+
+I think it would be helpful to look at the method signatures to focus on the skeletal structure.
+
+**Useeplus Decoder Helpers**
 
 ```c
-// Useeplus Decoder Helpers
 static inline bool up_is_valid_dev_id(u8 dev_id);
 
 static inline bool up_is_valid_usb_frm_del(u16 delimiter);
 
-static inline u16 up_get_usb_frm_del(const struct up_usb_frm_hdr \*hdr);
+static inline u16 up_get_usb_frm_del(const struct up_usb_frm_hdr *hdr);
 
-static inline u16 up_get_usb_frm_pl_len(const struct up_usb_frm_hdr \*hdr);
+static inline u16 up_get_usb_frm_pl_len(const struct up_usb_frm_hdr *hdr);
 
 static inline bool up_check_usb_frm_hdr(u16 del, u8 dev_id);
 
@@ -613,11 +616,11 @@ static inline struct up_usb_frm_hdr *up_get_usb_frm_hdr(u8 *buf, size_t index);
 
 static inline struct up_video_frm_frag_hdr * up_get_video_frm_frag_hdr(u8 *buf, size_t index);
 
-static inline bool up_is_valid_usb_frm_hdr(struct up_usb_frm_hdr \*hdr);
+static inline bool up_is_valid_usb_frm_hdr(struct up_usb_frm_hdr *hdr);
 
-static inline bool up_is_jpg_soi(const u8 \*ptr, size_t i);
+static inline bool up_is_jpg_soi(const u8 *ptr, size_t i);
 
-static inline bool up_is_jpg_eoi(const u8 \*ptr, size_t i);
+static inline bool up_is_jpg_eoi(const u8 *ptr, size_t i);
 
 static inline bool up_has_gravity_sensor(u8 flags);
 
@@ -627,33 +630,37 @@ static inline u8 up_get_other_flags(u8 flags);
 
 static inline bool up_has_other_flags(u8 flags);
 
-static inline void up_set_has_gravity_sensor(struct up_video_frm_frag_hdr \*hdr, bool has_gs);
+static inline void up_set_has_gravity_sensor(struct up_video_frm_frag_hdr *hdr, bool has_gs);
 
-static inline void up_set_button_pressed(struct up_video_frm_frag_hdr \*hdr, bool pressed);
+static inline void up_set_button_pressed(struct up_video_frm_frag_hdr *hdr, bool pressed);
 
-static inline void up_set_other_flags(struct up_video_frm_frag_hdr \*hdr, uint8_t other);
+static inline void up_set_other_flags(struct up_video_frm_frag_hdr *hdr, uint8_t other);
 
-static inline bool up_is_valid_video_frm_frag_hdr(const struct up_video_frm_frag_hdr \*hdr);
+static inline bool up_is_valid_video_frm_frag_hdr(const struct up_video_frm_frag_hdr *hdr);
+```
 
-// Useeplus Decoder Logic
+**Useeplus Decoder Logic**
+
+```c
 static bool up_check_ghost_hdr(u8 *buf, size_t len, size_t buf_off, size_t *u_hdr_off);
 
-static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos, struct up_decode_state \*state);
+static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos, struct up_decode_state *state);
 
 static size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len);
+```
 
-// Useeeplus Driver
+**v4l2_ioctl_ops**
 
-// Methods needed to initialize v4l2_ioctl_ops.
-static int up_g_parm(struct file *file, void *priv, struct v4l2_streamparm \*sp);
+```c
+static int up_g_parm(struct file *file, void *priv, struct v4l2_streamparm *sp);
 
-static int up_s_parm(struct file *file, void *priv, struct v4l2_streamparm \*sp);
+static int up_s_parm(struct file *file, void *priv, struct v4l2_streamparm *sp);
 
 static int up_s_input(struct file *file, void *priv, unsigned int i);
 
-static int up_g_input(struct file *file, void *priv, unsigned int \*i);
+static int up_g_input(struct file *file, void *priv, unsigned int *i);
 
-static int up_enum_input(struct file *file, void *priv, struct v4l2_input \*inp);
+static int up_enum_input(struct file *file, void *priv, struct v4l2_input *inp);
 
 static const struct v4l2_frmsize_discrete up_sizes[] = {
 	{ 640, 480 },
@@ -661,23 +668,23 @@ static const struct v4l2_frmsize_discrete up_sizes[] = {
 	{ 1280, 720 },
 };
 
-static int up_enum_frameintervals(struct file *file, void *priv, struct v4l2_frmivalenum \*fival);
+static int up_enum_frameintervals(struct file *file, void *priv, struct v4l2_frmivalenum *fival);
 
-static int up_enum_framesizes(struct file *file, void *priv, struct v4l2_frmsizeenum \*fsize);
+static int up_enum_framesizes(struct file *file, void *priv, struct v4l2_frmsizeenum *fsize);
 
-static int up_enum_fmt_vid_cap(struct file *file, void *priv, struct v4l2_fmtdesc \*f);
+static int up_enum_fmt_vid_cap(struct file *file, void *priv, struct v4l2_fmtdesc *f);
 
 static void up_enforce_format(struct up_drv_data *drv_data, struct v4l2_format *f);
 
-static int up_try_fmt_vid_cap(struct file *file, void *priv, struct v4l2_format \*f);
+static int up_try_fmt_vid_cap(struct file *file, void *priv, struct v4l2_format *f);
 
-static int up_set_hardware_resolution(struct up_drv_data \*drv_data, u8 frame_index, u32 target_fps);
+static int up_set_hardware_resolution(struct up_drv_data *drv_data, u8 frame_index, u32 target_fps);
 
-static int up_s_fmt_vid_cap(struct file *file, void *priv, struct v4l2_format \*f);
+static int up_s_fmt_vid_cap(struct file *file, void *priv, struct v4l2_format *f);
 
-static int up_g_fmt_vid_cap(struct file *file, void *priv, struct v4l2_format \*f);
+static int up_g_fmt_vid_cap(struct file *file, void *priv, struct v4l2_format *f);
 
-static int up_vidioc_querycap(struct file *file, void *priv, struct v4l2_capability \*cap);
+static int up_vidioc_querycap(struct file *file, void *priv, struct v4l2_capability *cap);
 
 static const struct v4l2_ioctl_ops up_v4l2_ioctl_ops = {
 	.vidioc_s_parm = up_s_parm,
@@ -700,29 +707,32 @@ static const struct v4l2_ioctl_ops up_v4l2_ioctl_ops = {
 	.vidioc_dqbuf = vb2_ioctl_dqbuf,
 	.vidioc_create_bufs = vb2_ioctl_create_bufs,
 };
+```
 
-// Methods needed to initialize vb2_ops
+**vb2_ops**
+
+```c
 static int up_write_msg(struct up_drv_data *data, u8 ep_addr, const u8 *tokens, size_t len);
 
 static const u8 iap_auth_handshake[] = { 0xFF, 0x55, 0xFF, 0x55, 0xEE, 0x10 };
 
-static int up_iap_auth(struct up_drv_data \*drv_data);
+static int up_iap_auth(struct up_drv_data *drv_data);
 
 static const u8 start_video_command[] = { 0xBB, 0xAA, 0x05, 0x00, 0x00 };
 
-static int up_start_video(struct up_drv_data \*drv_data);
+static int up_start_video(struct up_drv_data *drv_data);
 
 static const u8 stop_video_command[] = { 0xBB, 0xAA, 0x06, 0x00, 0x00 };
 
-static int up_stop_video(struct up_drv_data \*drv_data);
+static int up_stop_video(struct up_drv_data *drv_data);
 
-static void up_stop_streaming(struct vb2_queue \*vq);
+static void up_stop_streaming(struct vb2_queue *vq);
 
-static int up_start_streaming(struct vb2_queue \*vq, unsigned int count);
+static int up_start_streaming(struct vb2_queue *vq, unsigned int count);
 
-static void up_buf_queue(struct vb2_buffer \*vb);
+static void up_buf_queue(struct vb2_buffer *vb);
 
-static int up_buf_prepare(struct vb2_buffer \*vb);
+static int up_buf_prepare(struct vb2_buffer *vb);
 
 static int up_queue_setup(struct vb2_queue *vq, unsigned int *nbuffers, unsigned int *nplanes,
 			  unsigned int sizes[], struct device *alloc_devs[]);
@@ -736,11 +746,14 @@ static const struct vb2_ops up_vb2_ops = {
 	.wait_prepare = vb2_ops_wait_prepare,
 	.wait_finish = vb2_ops_wait_finish,
 };
+```
 
-// Methods needed to initialize v4l2_file_operations
-static int up_v4l2_release(struct file \*file);
+**v4l2_file_operations**å
 
-static int up_v4l2_open(struct file \*file);
+```c
+static int up_v4l2_release(struct file *file);
+
+static int up_v4l2_open(struct file *file);
 
 static const struct v4l2_file_operations up_v4l2_fops = {
 	.release = up_v4l2_release,
@@ -751,35 +764,38 @@ static const struct v4l2_file_operations up_v4l2_fops = {
 	.mmap = vb2_fop_mmap,
 	.owner = THIS_MODULE,
 };
+```
 
-// Methods needed to initialize usb_driver
-static void up_free_urb(struct up_drv_data \*drv_data, int urb_index);
+**usb_driver**
 
-static void up_free_urbs(struct up_drv_data \*drv_data);
+```c
+static void up_free_urb(struct up_drv_data *drv_data, int urb_index);
 
-static void up_disconnect(struct usb_interface \*itf);
+static void up_free_urbs(struct up_drv_data *drv_data);
 
-static int up_reset_resume(struct usb_interface \*intf);
+static void up_disconnect(struct usb_interface *itf);
 
-static int up_resume(struct usb_interface \*intf);
+static int up_reset_resume(struct usb_interface *intf);
 
-static int up_suspend(struct usb_interface \*intf, pm_message_t message);
+static int up_resume(struct usb_interface *intf);
 
-static void up_device_release(struct v4l2_device \*v4l2_dev);
+static int up_suspend(struct usb_interface *intf, pm_message_t message);
 
-static void up_on_frame_incomplete(void \*context);
+static void up_device_release(struct v4l2_device *v4l2_dev);
 
-static void up_on_frame_complete(void \*context);
+static void up_on_frame_incomplete(void *context);
 
-static void up_on_frame_start(void \*context, u8 frame_id, u8 dev_num);
+static void up_on_frame_complete(void *context);
+
+static void up_on_frame_start(void *context, u8 frame_id, u8 dev_num);
 
 static void up_on_video_payload(void *context, u8 *data, size_t len);
 
-static void up_work_handler(struct work_struct \*work);
+static void up_work_handler(struct work_struct *work);
 
-static void up_read_bulk_callback(struct urb \*urb);
+static void up_read_bulk_callback(struct urb *urb);
 
-static int up_alloc_urbs(struct up_drv_data \*drv_data);
+static int up_alloc_urbs(struct up_drv_data *drv_data);
 
 static int up_probe(struct usb_interface *itf, const struct usb_device_id *id);
 
@@ -798,10 +814,13 @@ static struct usb_driver up_driver = {
 	.id_table = up_table,
 	.name = USB_DRIVER_NAME,
 };
+```
 
+**Module Configuration**
+
+```c
 module_usb_driver(up_driver);
 
-// Confiure module info
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Jerome Terry");
 MODULE_DESCRIPTION("V4L2 driver for Useeplus protocol cameras");
