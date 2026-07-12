@@ -96,19 +96,6 @@
 
 #include "useeplus_protocol.h"
 
-struct up_decode_context {
-	size_t index;
-	unsigned long flags;
-
-	u8 *vaddr;
-
-	struct up_buffer *active_buf;
-	size_t active_pl_len;
-
-	size_t decode_buf_len;
-	u8 *decode_buf;
-};
-
 struct up_decode_state {
 	size_t usb_frm_len;
 	u8 frame_id;
