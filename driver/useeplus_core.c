@@ -1278,11 +1278,11 @@ static int __init up_init(void)
 	return usb_register(&up_driver);
 }
 
+module_exit(up_exit);
+module_init(up_init);
+
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Jerome Terry");
 MODULE_DESCRIPTION("V4L2 driver for Useeplus protocol cameras");
 MODULE_VERSION("0.1.0");
 MODULE_DEVICE_TABLE(usb, up_table);
-
-module_exit(up_exit);
-module_init(up_init);

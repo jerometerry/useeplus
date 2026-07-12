@@ -1803,13 +1803,23 @@ static struct usb_driver up_driver = {
 	.name = USB_DRIVER_NAME,
 };
 
-module_usb_driver(up_driver);
+static void __exit up_exit(void)
+{
+	pr_debug("useeplus_v4l2: Module exited.\n");
+	usb_deregister(&up_driver);
+}
+
+static int __init up_init(void)
+{
+	pr_debug("useeplus_v4l2: Module initialized.\n");
+	return usb_register(&up_driver);
+}
+
+module_exit(up_exit);
+module_init(up_init);
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Jerome Terry");
 MODULE_DESCRIPTION("V4L2 driver for Useeplus protocol cameras");
 MODULE_VERSION("0.1.0");
 MODULE_DEVICE_TABLE(usb, up_table);
-
-module_exit(up_exit);
-module_init(up_init);
