@@ -1834,20 +1834,7 @@ static struct usb_driver up_driver = {
 	.name = USB_DRIVER_NAME,
 };
 
-static void __exit up_exit(void)
-{
-	pr_debug("useeplus_v4l2: Module exited.\n");
-	usb_deregister(&up_driver);
-}
-
-static int __init up_init(void)
-{
-	pr_debug("useeplus_v4l2: Module initialized.\n");
-	return usb_register(&up_driver);
-}
-
-module_exit(up_exit);
-module_init(up_init);
+module_usb_driver(up_driver);
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Jerome Terry");
