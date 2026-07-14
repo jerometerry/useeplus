@@ -328,7 +328,7 @@ added the Useeplus driver.
 Pull in the latest upstream commits
 
 ```bash
-git fetch upstream
+git fetch upstream rpi-6.18.y
 git merge upstream/rpi-6.18.y
 ```
 
@@ -548,6 +548,7 @@ kernel and module, and ensure that rebooting loads this new kernel so the driver
 
 ```bash
 make -j$(nproc) Image.gz modules dtbs
+./scripts/clang-tools/gen_compile_commands.py
 sudo make modules_install
 
 export KERNEL_RELEASE=$(make -s kernelrelease)
@@ -568,6 +569,9 @@ sudo reboot
 For rapid testing of changes to the useeplus driver, I don't want to recompile the whole kernel or
 install all modules. With the latest kenel running, I run the following commands to compile,
 install and load the latest useeplus driver.
+
+While this is faster, it leads to a tainted kernel. Use make modules / make modules_install
+procedures to prevent the kerenel from becoming tainted.
 
 ```bash
 sudo rmmod useeplus
@@ -1234,4 +1238,57 @@ MODULE_AUTHOR("Jerome Terry");
 MODULE_DESCRIPTION("V4L2 driver for Useeplus protocol cameras");
 MODULE_VERSION("0.1.0");
 MODULE_DEVICE_TABLE(usb, up_table);
+```
+
+## Digging in with Bpftrace
+
+Using bpftrace to observer the inner workings of the useeplus v4l2 driver will help solidfy my
+understand of v4l2, vb2, usb, and how all the moving parts fit together.
+
+bpftrace script to list all tracepoints and write to file
+
+```bash
+sudo bpftrace -l 'tracepoint:*' > tracepoints.list
+```
+
+```bash
+jterry@authentic-nerd:~/bpf-scripts $ cat sys_enter_ioctl.bt
+#!/usr/bin/bpftrace
+
+BEGIN {
+    @ioctl_name[3227014671] = "VIDIOC_QBUF (Queue Video frame)";
+    @ioctl_name[3227014673] = "VIDIOC_DQBUF (Dequeue Video frame)";
+}
+
+tracepoint:syscalls:sys_enter_ioctl /comm == "v4l2_server"/ {
+    @start[tid] = nsecs;
+    @cmd[tid] = args->cmd;
+}
+
+tracepoint:syscalls:sys_exit_ioctl /@start[tid]/ {
+    $name = @ioctl_name[@cmd[tid]];
+
+    if ($name != "") {
+        @time_us[$name] = lhist((nsecs - @start[tid]) / 1000, 0, 1000, 100);
+    }
+
+    delete(@start[tid]);
+    delete(@cmd[tid]);
+
+```
+
+```bash
+jterry@authentic-nerd:~/bpf-scripts $ sudo bpftrace ./sys_enter_ioctl.bt
+Attaching 3 probes...
+^C
+
+
+@ioctl_name[3227014671]: VIDIOC_QBUF (Queue Video frame)
+@ioctl_name[3227014673]: VIDIOC_DQBUF (Dequeue Video frame)
+
+@time_us[VIDIOC_DQBUF (Dequeue Video frame)]:
+[0, 100)             256 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+
+@time_us[VIDIOC_QBUF (Queue Video frame)]:
+[0, 100)             256 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 ```
