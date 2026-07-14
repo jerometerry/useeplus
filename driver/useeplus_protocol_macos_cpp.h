@@ -97,7 +97,7 @@ struct up_video_frm_frag_hdr {
 
 constexpr int UP_MAX_VIDEO_FRM_FRAG_LEN = 1024;
 constexpr int JPEG_SOI_MAX_POS = 256;
-constexpr int MAX_GHOST_HDR_OFF = 160;
+constexpr int MAX_GHOST_HDR_OFF = 512;
 
 constexpr size_t UP_USB_FRM_HDR_LEN = sizeof(struct up_usb_frm_hdr);
 constexpr size_t UP_VIDEO_FRM_FRAG_HDR_LEN =

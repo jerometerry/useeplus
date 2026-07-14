@@ -75,7 +75,7 @@ struct up_video_frm_frag_hdr {
 
 #define UP_MAX_VIDEO_FRM_FRAG_LEN 1024
 #define JPEG_SOI_MAX_POS 256
-#define MAX_GHOST_HDR_OFF 160
+#define MAX_GHOST_HDR_OFF 512
 
 #define UP_USB_FRM_HDR_LEN (sizeof(struct up_usb_frm_hdr))
 #define UP_VIDEO_FRM_FRAG_HDR_LEN (sizeof(struct up_video_frm_frag_hdr))
