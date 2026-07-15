@@ -7,7 +7,6 @@
 #include <format>
 #include <span>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "constants.hpp"

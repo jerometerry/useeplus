@@ -1,6 +1,8 @@
 #include "useeplus_video_stream.hpp"
 
+#include <bit>
 #include <cstdint>
+#include <format>
 #include <span>
 #include <vector>
 
