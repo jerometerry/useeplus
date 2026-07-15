@@ -21,7 +21,7 @@
 #define VIDEO_QUEUE_NAME "useeplus-queue"
 #define VIDEO_DEVICE_NAME "useeplus-video"
 
-#define NUM_URBS 4
+#define NUM_URBS 32
 #define URB_SIZE (4 * 1024)
 #define MAX_FRAME_SIZE (256 * 1024)
 #define MAX_WORKSPACE_SIZE (512 * 1024)
