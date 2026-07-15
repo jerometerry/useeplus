@@ -590,8 +590,8 @@ static int up_queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
 {
 	unsigned int allocated_buffers = vb2_get_num_buffers(vq);
 
-	if (allocated_buffers + *nbuffers < 2)
-		*nbuffers = 2 - allocated_buffers;
+	if (allocated_buffers + *nbuffers < MIN_VB2_REQ_BUFS)
+		*nbuffers = MIN_VB2_REQ_BUFS - allocated_buffers;
 
 	if (*nplanes)
 		return sizes[0] < MAX_FRAME_SIZE ? -EINVAL : 0;
@@ -1186,7 +1186,7 @@ static int up_probe(struct usb_interface *itf, const struct usb_device_id *id)
 	q = &drv_data->v4l2.queue;
 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_READ;
-	q->min_reqbufs_allocation = 2;
+	q->min_reqbufs_allocation = MIN_VB2_REQ_BUFS;
 	q->drv_priv = drv_data;
 	q->buf_struct_size = sizeof(struct up_buffer);
 	q->ops = &up_vb2_ops;
