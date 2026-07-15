@@ -136,7 +136,6 @@ struct up_decoder {
 	bool building_frame;
 	bool eof_reached;
 	bool found_soi;
-	bool dangling_ff;
 	int  frame_id;
 };
 
@@ -191,7 +190,6 @@ struct up_drv_data {
 		bool building_frame;
 		bool eof_reached;
 		bool found_soi;
-		bool dangling_ff;
 		int  frame_id;
 	} decoder;
 
@@ -566,7 +564,7 @@ static size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 		}
 
 		img_size = video_data_len;
-		if (dec->dangling_ff && video_data_len > 0 && video_data_ptr[0] == JPEG_EOI) {
+		if (video_data_len > 0 && video_data_ptr[0] == JPEG_EOI) {
 			img_size = 1;
 			dec->eof_reached = true;
 		}
@@ -583,11 +581,6 @@ static size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 
 		if (o_vff)
 			o_vff(dec->context, video_data_ptr, img_size);
-
-		if (!dec->eof_reached && video_data_len > 0)
-			dec->dangling_ff = (video_data_ptr[video_data_len - 1] == JPEG_DEL);
-		else
-			dec->dangling_ff = false;
 
 		if (dec->eof_reached && o_vfc)
 			o_vfc(dec->context);
@@ -1493,7 +1486,6 @@ static void up_work_handler(struct work_struct *work)
 		decoder.building_frame = drv_data->decoder.building_frame;
 		decoder.frame_id = drv_data->decoder.frame_id;
 		decoder.found_soi = drv_data->decoder.found_soi;
-		decoder.dangling_ff = drv_data->decoder.dangling_ff;
 		decoder.eof_reached = drv_data->decoder.eof_reached;
 
 		decoder.cb.on_video_frame_start = up_on_frame_start;
@@ -1507,7 +1499,6 @@ static void up_work_handler(struct work_struct *work)
 		drv_data->decoder.building_frame = decoder.building_frame;
 		drv_data->decoder.frame_id = decoder.frame_id;
 		drv_data->decoder.found_soi = decoder.found_soi;
-		drv_data->decoder.dangling_ff = decoder.dangling_ff;
 		drv_data->decoder.eof_reached = decoder.eof_reached;
 
 		buf_len = drv_data->decoder.workspace_len;
