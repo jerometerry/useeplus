@@ -104,20 +104,48 @@ struct up_decode_state {
 };
 
 static bool up_check_ghost_hdr(u8 *buf, size_t len, size_t buf_off,
-			       size_t *u_hdr_off)
+			       size_t *u_hdr_off, bool *need_data)
 {
 	struct up_usb_frm_hdr *u_hdr;
-	size_t ghost_lim;
+	size_t declared_pl_len;
+	size_t declared_pkt_size;
+	size_t required_data;
+	size_t max_o;
 	size_t o;
 
-	if (UP_USB_FRM_HDR_LEN + buf_off > len)
+	*need_data = false;
+
+	if (UP_USB_FRM_HDR_LEN + buf_off > len) {
+		*need_data = true;
+		return false;
+	}
+
+	u_hdr = up_get_usb_frm_hdr(buf, buf_off);
+
+	if (!up_is_valid_usb_frm_hdr(u_hdr))
 		return false;
 
-	ghost_lim = len - buf_off - UP_USB_FRM_HDR_LEN;
-	if (ghost_lim > MAX_GHOST_HDR_OFF)
-		ghost_lim = MAX_GHOST_HDR_OFF;
+	declared_pl_len = up_get_usb_frm_pl_len(u_hdr);
 
-	for (o = UP_USB_FRM_HDR_LEN; o <= ghost_lim; o++) {
+	if (declared_pl_len == 0)
+		return false;
+
+	declared_pkt_size = UP_USB_FRM_HDR_LEN + declared_pl_len;
+
+	required_data = declared_pkt_size;
+	if (required_data > UP_USB_FRM_HDR_LEN + MAX_GHOST_HDR_OFF)
+		required_data = UP_USB_FRM_HDR_LEN + MAX_GHOST_HDR_OFF;
+
+	if (len - buf_off < required_data) {
+		*need_data = true;
+		return false;
+	}
+
+	max_o = declared_pl_len;
+	if (max_o > MAX_GHOST_HDR_OFF)
+		max_o = MAX_GHOST_HDR_OFF;
+
+	for (o = UP_USB_FRM_HDR_LEN; o <= max_o; o++) {
 		u_hdr = up_get_usb_frm_hdr(buf, buf_off + o);
 
 		if (up_is_valid_usb_frm_hdr(u_hdr)) {
@@ -138,6 +166,7 @@ static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos,
 	size_t u_hdr_off;
 	size_t v_hdr_off;
 	size_t buf_off;
+	bool need_data;
 
 	u_hdr_off = 0;
 	buf_off = *cur_pos;
@@ -152,7 +181,7 @@ static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos,
 		return UP_INVALID_USB_FRM_HDR;
 	}
 
-	if (up_check_ghost_hdr(buf, len, buf_off, &u_hdr_off)) {
+	if (up_check_ghost_hdr(buf, len, buf_off, &u_hdr_off, &need_data)) {
 		/*
 		 * Hardware packs 4 944 byte packets into 4K pages, leaving the
 		 * remaining 320 bytes uninitialized. This uninitialized data
@@ -177,6 +206,9 @@ static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos,
 		(*cur_pos)++;
 		return UP_INVALID_USB_FRM_HDR;
 	}
+
+	if (need_data)
+		return UP_DECODE_NEED_DATA;
 
 	state->usb_frm_len = UP_USB_FRM_HDR_LEN + u_frm_pl_len;
 

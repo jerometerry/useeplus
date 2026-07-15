@@ -22,7 +22,7 @@
 #define VIDEO_DEVICE_NAME "useeplus-video"
 
 #define NUM_URBS 4
-#define URB_SIZE (16 * 1024)
+#define URB_SIZE (4 * 1024)
 #define MAX_FRAME_SIZE (256 * 1024)
 #define MAX_WORKSPACE_SIZE (512 * 1024)
 #define FIFO_Q_SIZE (256 * 1024)

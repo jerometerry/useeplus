@@ -95,7 +95,7 @@ I moved all the defines to below the includes
 ```bash
 #define UP_MAX_VIDEO_FRM_FRAG_LEN 1024
 #define JPEG_SOI_MAX_POS 256
-#define MAX_GHOST_HDR_OFF 160
+#define MAX_GHOST_HDR_OFF 512
 
 #define UP_USB_FRM_HDR_LEN (sizeof(struct up_usb_frm_hdr))
 #define UP_VIDEO_FRM_FRAG_HDR_LEN (sizeof(struct up_video_frm_frag_hdr))
@@ -109,7 +109,7 @@ I moved all the defines to below the includes
 #define VIDEO_DEVICE_NAME "useeplus-video"
 
 #define NUM_URBS 4
-#define URB_SIZE (16 * 1024)
+#define URB_SIZE (4 * 1024)
 #define MAX_FRAME_SIZE (256 * 1024)
 #define MAX_WORKSPACE_SIZE (512 * 1024)
 #define FIFO_Q_SIZE (256 * 1024)
@@ -1291,4 +1291,50 @@ Attaching 3 probes...
 
 @time_us[VIDIOC_QBUF (Queue Video frame)]:
 [0, 100)             256 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+```
+
+Since all methods in the Useeplus driver are prefixed with `up_`, we can use bpftrace to list all
+available kprobes matching that prefix.
+
+```bash
+jterry@authentic-nerd:~ $ sudo bpftrace -l 'kprobe:up_*'
+kprobe:up_buf_prepare
+kprobe:up_buf_queue
+kprobe:up_decode_bulk
+kprobe:up_device_release
+kprobe:up_disconnect
+kprobe:up_enum_fmt_vid_cap
+kprobe:up_enum_frameintervals
+kprobe:up_enum_framesizes
+kprobe:up_enum_input
+kprobe:up_free_urbs
+kprobe:up_g_fmt_vid_cap
+kprobe:up_g_input
+kprobe:up_g_parm
+kprobe:up_on_frame_complete
+kprobe:up_on_frame_incomplete
+kprobe:up_on_frame_start
+kprobe:up_on_video_payload
+kprobe:up_probe
+kprobe:up_queue_setup
+kprobe:up_read
+kprobe:up_read_bulk_callback
+kprobe:up_reset_resume
+kprobe:up_resume
+kprobe:up_s_fmt_vid_cap
+kprobe:up_s_input
+kprobe:up_s_parm
+kprobe:up_set_hardware_resolution.constprop.0.isra.0
+kprobe:up_start_streaming
+kprobe:up_stop_streaming
+kprobe:up_suspend
+kprobe:up_threshold_show
+kprobe:up_threshold_store
+kprobe:up_try_fmt_vid_cap
+kprobe:up_v4l2_open
+kprobe:up_v4l2_release
+kprobe:up_vidioc_querycap
+kprobe:up_work_handler
+kprobe:up_write
+kprobe:up_write_msg.isra.0
 ```
