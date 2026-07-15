@@ -99,6 +99,7 @@ struct up_drv_data {
 		bool building_frame;
 		bool eof_reached;
 		bool found_soi;
+		bool dangling_ff;
 		int  frame_id;
 	} decoder;
 

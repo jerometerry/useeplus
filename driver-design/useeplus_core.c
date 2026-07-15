@@ -191,6 +191,7 @@ struct up_drv_data {
 		bool building_frame;
 		bool eof_reached;
 		bool found_soi;
+		bool dangling_ff;
 		int  frame_id;
 	} decoder;
 
@@ -442,6 +443,11 @@ static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos,
 
 	if ((state->usb_frm_len + buf_off) > len)
 		return UP_DECODE_NEED_DATA;
+
+	if (u_hdr->device_id != VIDEO_CAMERA_ID) {
+		*cur_pos += state->usb_frm_len;
+		return UP_DECODE_SKIP;
+	}
 
 	if (u_frm_pl_len < UP_VIDEO_FRM_FRAG_HDR_LEN) {
 		*cur_pos += state->usb_frm_len;
@@ -1492,6 +1498,7 @@ static void up_work_handler(struct work_struct *work)
 		decoder.building_frame = drv_data->decoder.building_frame;
 		decoder.frame_id = drv_data->decoder.frame_id;
 		decoder.found_soi = drv_data->decoder.found_soi;
+		decoder.dangling_ff = drv_data->decoder.dangling_ff;
 		decoder.eof_reached = drv_data->decoder.eof_reached;
 
 		decoder.cb.on_video_frame_start = up_on_frame_start;
@@ -1505,6 +1512,7 @@ static void up_work_handler(struct work_struct *work)
 		drv_data->decoder.building_frame = decoder.building_frame;
 		drv_data->decoder.frame_id = decoder.frame_id;
 		drv_data->decoder.found_soi = decoder.found_soi;
+		drv_data->decoder.dangling_ff = decoder.dangling_ff;
 		drv_data->decoder.eof_reached = decoder.eof_reached;
 
 		buf_len = drv_data->decoder.workspace_len;

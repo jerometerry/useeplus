@@ -215,6 +215,11 @@ static enum up_decode_status up_decode(u8 *buf, size_t len, size_t *cur_pos,
 	if ((state->usb_frm_len + buf_off) > len)
 		return UP_DECODE_NEED_DATA;
 
+	if (u_hdr->device_id != VIDEO_CAMERA_ID) {
+		*cur_pos += state->usb_frm_len;
+		return UP_DECODE_SKIP;
+	}
+
 	if (u_frm_pl_len < UP_VIDEO_FRM_FRAG_HDR_LEN) {
 		*cur_pos += state->usb_frm_len;
 		return UP_DECODE_SKIP;
