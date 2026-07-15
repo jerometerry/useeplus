@@ -104,7 +104,8 @@ int main(int argc, const char* argv[]) {
         VideoFrameBuffer ringBuffer;
         ringBuffer.preAllocate(Units::ONE_HUNDRED_TWENTY_EIGHT_KILOBYTES);
 
-        V4l2VideoSource::FrameHandler handler = [&ringBuffer](std::span<const uint8_t> payload) -> bool {
+        V4l2VideoSource::FrameHandler handler =
+            [&ringBuffer](std::span<const uint8_t> payload) -> bool {
             if (!running.load(std::memory_order_relaxed)) {
                 return false;
             }

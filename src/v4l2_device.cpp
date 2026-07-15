@@ -64,7 +64,7 @@ V4l2Device::~V4l2Device() {
             munmap(buf.start, buf.length);
         }
 
-	struct v4l2_requestbuffers req = {};
+        struct v4l2_requestbuffers req = {};
         req.count = 0;
         req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         req.memory = V4L2_MEMORY_MMAP;

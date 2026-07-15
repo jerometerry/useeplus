@@ -90,12 +90,12 @@ UsbCamera::UsbCamera(const UsbDeviceInfo& target, CameraResolution resolution) {
 
 UsbCamera::~UsbCamera() {
     if (deviceHandle_) {
-	libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
+        libusb_set_interface_alt_setting(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE, 0);
 
-	libusb_release_interface(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
+        libusb_release_interface(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
         libusb_release_interface(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE);
 
-	// Return control to the OS
+        // Return control to the OS
         libusb_attach_kernel_driver(deviceHandle_, UsbProtocol::IAP_CONTROL_INTERFACE);
         libusb_attach_kernel_driver(deviceHandle_, UsbProtocol::VIDEO_STREAM_INTERFACE);
 
@@ -108,10 +108,9 @@ UsbCamera::~UsbCamera() {
 
 void UsbCamera::haltHardware() {
     if (deviceHandle_) {
-        uint8_t stopCmd[] = { 0xBB, 0xAA, 0x06, 0x00, 0x00 };
+        uint8_t stopCmd[] = {0xBB, 0xAA, 0x06, 0x00, 0x00};
         int actualLength = 0;
-        libusb_bulk_transfer(deviceHandle_,
-                             LIBUSB_ENDPOINT_OUT | UsbProtocol::VIDEO_ENDPOINT,
+        libusb_bulk_transfer(deviceHandle_, LIBUSB_ENDPOINT_OUT | UsbProtocol::VIDEO_ENDPOINT,
                              stopCmd, sizeof(stopCmd), &actualLength, 100);
     }
 }

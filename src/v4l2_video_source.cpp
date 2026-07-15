@@ -1,6 +1,7 @@
 #include "v4l2_video_source.hpp"
 
 #include <sys/select.h>
+
 #include <iostream>
 
 void V4l2VideoSource::loop(V4l2Device* device) {
@@ -26,7 +27,7 @@ void V4l2VideoSource::loop(V4l2Device* device) {
                 break;
             }
 
-	    std::cerr << "[V4L2 Error] select() polling failed.\n";
+            std::cerr << "[V4L2 Error] select() polling failed.\n";
             break;
         }
     }
