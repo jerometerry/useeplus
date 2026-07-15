@@ -199,8 +199,6 @@ up_is_valid_video_frm_frag_hdr(const struct up_video_frm_frag_hdr *hdr)
 		return false;
 	if (hdr->device_number > MAX_DEV_NUM)
 		return false;
-	if (up_has_gravity_sensor(hdr->flags))
-		return false;
 	if (up_has_other_flags(hdr->flags))
 		return false;
 	return true;

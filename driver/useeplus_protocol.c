@@ -297,7 +297,7 @@ size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 			dec->frame_id = state.frame_id;
 			dec->building_frame = true;
 			dec->found_soi = false;
-			dec->eof_reached = false;
+			dec->dangling_ff = false;
 			dec->eof_reached = false;
 		}
 
