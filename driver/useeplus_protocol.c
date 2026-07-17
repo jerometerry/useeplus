@@ -336,12 +336,7 @@ size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 		}
 
 		img_size = video_data_len;
-		if (video_data_len > 0 && video_data_ptr[0] == JPEG_EOI) {
-			img_size = 1;
-			dec->eof_reached = true;
-		}
-
-		if (!dec->eof_reached && video_data_len >= 2) {
+		if (video_data_len >= 2) {
 			for (i = 0; i < video_data_len - 1; i++) {
 				if (up_is_jpg_eoi(video_data_ptr, i)) {
 					img_size = i + 2;

@@ -525,7 +525,6 @@ static size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 			dec->building_frame = true;
 			dec->found_soi = false;
 			dec->eof_reached = false;
-			dec->eof_reached = false;
 		}
 
 		if (dec->eof_reached)
@@ -564,12 +563,7 @@ static size_t up_decode_bulk(struct up_decoder *dec, u8 *buf, size_t len)
 		}
 
 		img_size = video_data_len;
-		if (video_data_len > 0 && video_data_ptr[0] == JPEG_EOI) {
-			img_size = 1;
-			dec->eof_reached = true;
-		}
-
-		if (!dec->eof_reached && video_data_len >= 2) {
+		if (video_data_len >= 2) {
 			for (i = 0; i < video_data_len - 1; i++) {
 				if (up_is_jpg_eoi(video_data_ptr, i)) {
 					img_size = i + 2;
@@ -1164,8 +1158,8 @@ static int up_queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
 {
 	unsigned int allocated_buffers = vb2_get_num_buffers(vq);
 
-	if (allocated_buffers + *nbuffers < 2)
-		*nbuffers = 2 - allocated_buffers;
+	if (allocated_buffers + *nbuffers < MIN_VB2_REQ_BUFS)
+		*nbuffers = MIN_VB2_REQ_BUFS - allocated_buffers;
 
 	if (*nplanes)
 		return sizes[0] < MAX_FRAME_SIZE ? -EINVAL : 0;
@@ -1760,7 +1754,7 @@ static int up_probe(struct usb_interface *itf, const struct usb_device_id *id)
 	q = &drv_data->v4l2.queue;
 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_READ;
-	q->min_reqbufs_allocation = 2;
+	q->min_reqbufs_allocation = MIN_VB2_REQ_BUFS;
 	q->drv_priv = drv_data;
 	q->buf_struct_size = sizeof(struct up_buffer);
 	q->ops = &up_vb2_ops;
