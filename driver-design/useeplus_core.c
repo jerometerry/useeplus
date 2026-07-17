@@ -1156,16 +1156,12 @@ static int up_queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
 			  unsigned int *nplanes, unsigned int sizes[],
 			  struct device *alloc_devs[])
 {
-	unsigned int allocated_buffers = vb2_get_num_buffers(vq);
-
-	if (allocated_buffers + *nbuffers < MIN_VB2_REQ_BUFS)
-		*nbuffers = MIN_VB2_REQ_BUFS - allocated_buffers;
-
 	if (*nplanes)
 		return sizes[0] < MAX_FRAME_SIZE ? -EINVAL : 0;
 
 	*nplanes = 1;
 	sizes[0] = MAX_FRAME_SIZE;
+
 	return 0;
 }
 
